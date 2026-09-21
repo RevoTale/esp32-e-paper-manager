@@ -1,0 +1,5 @@
+{
+  "name": "esp32-e-paper-manager",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "root"
+}

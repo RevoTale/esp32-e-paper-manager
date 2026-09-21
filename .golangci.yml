@@ -1,0 +1,24 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - cyclop
+    - funlen
+  settings:
+    cyclop:
+      max-complexity: 10
+    funlen:
+      lines: 60
+      statements: -1
+      ignore-comments: false
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 2m
+  relative-path-mode: gomod
+  modules-download-mode: readonly
+  tests: true

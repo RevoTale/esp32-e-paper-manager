@@ -1,0 +1,7 @@
+/build/
+/build-release/
+/build-uart-fix/
+/build-usb-v3/
+/sdkconfig
+/sdkconfig.old
+build-refresh-policy/

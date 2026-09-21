@@ -1,0 +1,35 @@
+name: Quality
+on:
+  workflow_call:
+  pull_request:
+  push:
+    branches: ['**']
+permissions:
+  contents: read
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build independent toolchain
+        run: docker build -f .devcontainer/Dockerfile -t epaper-dev .
+      - name: Validate standalone project
+        env:
+          QUALITY_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if ! git cat-file -e "${QUALITY_BASE_REF}^{commit}" 2>/dev/null; then
+            QUALITY_BASE_REF=$(git rev-list --max-parents=0 HEAD)
+          fi
+          docker run --rm -e QUALITY_BASE_REF \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory \
+            -e GIT_CONFIG_VALUE_0=/workspaces/project \
+            -v "$PWD:/workspaces/project" -w /workspaces/project epaper-dev make quality
+      - name: Build runtime image
+        run: docker build --build-arg TARGETARCH=amd64 --build-arg VCS_REF="$GITHUB_SHA" -t epaper-runtime .
