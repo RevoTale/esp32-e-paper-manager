@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.22)
 project(epaper_receiver_tests C)
 enable_testing()
+find_program(CLANG_TIDY clang-tidy-19 REQUIRED)
+add_test(NAME function_size_policy COMMAND ${CMAKE_COMMAND}
+    -DCLANG_TIDY=${CLANG_TIDY}
+    -DCONFIG=${CMAKE_CURRENT_SOURCE_DIR}/../../../.clang-tidy
+    -DOUTPUT_DIR=${CMAKE_CURRENT_BINARY_DIR}/function-size-policy
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/function_size_policy.cmake)
 add_executable(epoch_test epoch_test.c ../core/epoch.c ../core/bytes.c)
 target_include_directories(epoch_test PRIVATE ../core)
 target_compile_options(epoch_test PRIVATE -Wall -Wextra -Werror -Wconversion -fsanitize=address,undefined -fno-omit-frame-pointer)
@@ -94,12 +100,22 @@ target_compile_options(screen_completion_test PRIVATE -Wall -Wextra -Werror -Wco
 target_link_options(screen_completion_test PRIVATE -fsanitize=address,undefined)
 add_test(NAME screen_completion COMMAND screen_completion_test)
 find_package(Threads REQUIRED)
-add_executable(net_io_fault_test net_io_fault_test.c ../platform/net_io.c ../core/wire.c ../core/bytes.c)
-target_include_directories(net_io_fault_test PRIVATE net_stubs ../platform ../core)
-target_link_libraries(net_io_fault_test PRIVATE Threads::Threads)
-target_compile_options(net_io_fault_test PRIVATE -Wall -Wextra -Werror -Wconversion -fsanitize=address,undefined -fno-omit-frame-pointer)
-target_link_options(net_io_fault_test PRIVATE -fsanitize=address,undefined)
-add_test(NAME net_io_fault COMMAND net_io_fault_test)
+foreach(kind fault latency)
+    add_executable(net_io_${kind}_test net_io_fault_test.c ../platform/net_io.c ../core/wire.c ../core/bytes.c)
+    target_include_directories(net_io_${kind}_test PRIVATE net_stubs ../platform ../core)
+    target_link_libraries(net_io_${kind}_test PRIVATE Threads::Threads)
+    target_compile_options(net_io_${kind}_test PRIVATE -Wall -Wextra -Werror -Wconversion -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(net_io_${kind}_test PRIVATE -fsanitize=address,undefined)
+    add_test(NAME net_io_${kind} COMMAND net_io_${kind}_test)
+    set_tests_properties(net_io_${kind} PROPERTIES TIMEOUT 15)
+endforeach()
+target_compile_definitions(net_io_latency_test PRIVATE EP_QUALIFY_LATENCY=1)
+set_tests_properties(net_io_latency PROPERTIES LABELS latency)
+add_executable(net_deadline_test net_deadline_test.c ../platform/net_io.c)
+target_include_directories(net_deadline_test PRIVATE net_stubs ../platform)
+target_compile_options(net_deadline_test PRIVATE -Wall -Wextra -Werror -Wconversion -fsanitize=address,undefined -fno-omit-frame-pointer)
+target_link_options(net_deadline_test PRIVATE -fsanitize=address,undefined -Wl,--wrap=select -Wl,--wrap=recv -Wl,--wrap=send)
+add_test(NAME net_deadline COMMAND net_deadline_test)
 add_executable(receiver_cli receiver_cli.c ../core/panel75.c ../core/panel75_io.c ../core/panel75_trace.c
     ../core/screen.c ../core/screen_frame.c ../core/screen_reply.c ../core/screen_timing.c
     ../core/provision.c ../core/config.c ../core/wire.c ../core/bytes.c)

@@ -21,6 +21,7 @@ do not authorize skips or suppressions here.
 | --- | --- |
 | At most 300 physical lines per owned Go/C/header file | `make format` |
 | At most 60 lines per Go function, complexity at most 10 | pinned golangci-lint, funlen and cyclop |
+| At most 60 lines per native-tested C function | clang-tidy 19 readability-function-size, `make c-size` |
 | Changed executable coverage at least 90% | worktree-covercheck, including untracked implementation |
 | Root Go statement coverage at least 94.6% | `make coverage`, Sep 21 no-decrease baseline |
 | Whole Go modules linted, not only changed files | root, tools and firmware interoperability modules |
@@ -37,8 +38,9 @@ baseline; CI uses the PR base or previous pushed commit. A clean-worktree result
 is not evidence for a different unreviewed revision.
 
 TinyGo compilation covers screenwire, streamrx and refreshpolicy, not a complete
-Pico application or heap/stack budget proof. C function-length checks, isolated
-image acceptance and complete target resource acceptance remain migration work,
+Pico application or heap/stack budget proof. C function-length checking currently
+covers core, native tests and the three native-tested platform files, not all
+ESP-IDF-only adapters. Those adapters and complete target resource acceptance remain migration work,
 not implied guarantees of this gate.
 
 ## Runtime and acceptance
@@ -58,7 +60,20 @@ reported as successful.
 
 - [golangci-lint settings](https://golangci-lint.run/docs/linters/configuration/)
 - [Go coverage](https://go.dev/doc/build-cover)
+- [Clang 19 function-size policy](https://releases.llvm.org/19.1.0/tools/clang/tools/extra/docs/clang-tidy/checks/readability/function-size.html)
 - [covercheck v0.2.0](https://pkg.go.dev/github.com/dr-dobermann/covercheck@v0.2.0)
 - [TinyGo allocations](https://tinygo.org/docs/concepts/compiler-internals/heap-allocation/)
 
-There are no newly approved quality exceptions in this repository.
+## Approved latency qualification split
+
+User-approved on 2026-09-21; implemented on 2026-09-26. `make quality`
+retains deterministic deadline/cancellation checks and real-socket functional
+tests. Only wall-clock ceilings run separately with `make latency`: shared
+50 ms read/write deadlines must return in less than 120 ms, cancellation in
+less than 150 ms. Both executables compile the same socket test source.
+
+Measured host `select` scheduling overruns motivated this split; no firmware
+deadline or latency threshold changes. See [select(2)](https://man7.org/linux/man-pages/man2/select.2.html).
+Passing quality does not establish latency qualification. Maintainers must
+record a separate controlled-environment latency result before production
+acceptance; review this split when the qualification environment changes.

@@ -4,7 +4,7 @@ USER root
 ENV GOTOOLCHAIN=go1.26.8
 RUN go version
 RUN apt-get update && apt-get install --yes --no-install-recommends \
-    build-essential bison ca-certificates ccache cmake flex git gperf \
+    build-essential bison ca-certificates ccache clang-tidy-19 cmake flex git gperf \
     libffi-dev libssl-dev libusb-1.0-0 ninja-build python3 python3-pip python3-venv wget \
     && rm -rf /var/lib/apt/lists/*
 ARG ESP_IDF_VERSION=v5.5.5

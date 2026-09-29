@@ -3,9 +3,9 @@ SHELL := /bin/bash
 BUILD_DIR ?= $(CURDIR)/build
 QUALITY_BASE_REF ?= HEAD
 
-.PHONY: quality format lint workflows audit test coverage native interop tinygo firmware build tools
+.PHONY: quality format lint workflows audit test coverage native native-build latency c-size interop tinygo firmware build tools
 .NOTPARALLEL:
-quality: format lint workflows audit test coverage native interop tinygo firmware build
+quality: format lint workflows audit test coverage native c-size interop tinygo firmware build
 
 tools:
 	go -C tools mod verify
@@ -44,10 +44,17 @@ coverage:
 	go -C tools run ./cmd/worktree-covercheck -root .. -base "$(QUALITY_BASE_REF)" -profiles "$(BUILD_DIR)/coverage.out,$(BUILD_DIR)/tools-coverage.out" -min 90
 	@actual=$$(go tool cover -func="$(BUILD_DIR)/coverage.out" | awk '/^total:/ {gsub(/%/, "", $$3); print $$3}'); awk -v actual="$$actual" 'BEGIN {if (actual < 94.6) exit 1}'; echo "total coverage: $$actual% (floor 94.6%)"
 
-native:
-	cmake -S firmware/esp32/tests -B "$(BUILD_DIR)/native" -G Ninja
+native-build:
+	cmake -S firmware/esp32/tests -B "$(BUILD_DIR)/native" -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 	cmake --build "$(BUILD_DIR)/native" -j 4
-	ctest --test-dir "$(BUILD_DIR)/native" --output-on-failure
+native: native-build
+	ctest --test-dir "$(BUILD_DIR)/native" --output-on-failure --no-tests=error -LE latency
+
+latency: native-build
+	ctest --test-dir "$(BUILD_DIR)/native" --verbose --no-tests=error -L latency
+
+c-size: native
+	clang-tidy-19 -p "$(BUILD_DIR)/native" firmware/esp32/core/*.c firmware/esp32/tests/*.c firmware/esp32/platform/net_io.c firmware/esp32/platform/display_guard.c firmware/esp32/platform/uart.c
 
 interop: native
 	cd firmware/esp32/tests/interop && EP_CRYPTO_CLI="$(BUILD_DIR)/native/crypto_cli" EP_WIRE_CLI="$(BUILD_DIR)/native/wire_cli" EP_RECEIVER_CLI="$(BUILD_DIR)/native/receiver_cli" go test -timeout 30s ./...
