@@ -32,17 +32,26 @@ audit:
 	tools/bin/govulncheck ./...
 
 test:
-	go test -race ./...
+	go test -race -count=1 -shuffle=off ./...
 	go vet ./...
 	go mod verify
-	go -C tools test ./...
+	go -C tools test -count=1 -shuffle=off ./...
 
 coverage:
 	mkdir -p "$(BUILD_DIR)"
-	go test -coverprofile="$(BUILD_DIR)/coverage.out" ./...
-	go -C tools test -coverprofile="$(BUILD_DIR)/tools-coverage.out" ./...
+	@for trial in 1 2 3; do \
+		echo "coverage run $$trial/3 (uncached, stable test order)"; \
+		go test -count=1 -shuffle=off -covermode=set -coverprofile="$(BUILD_DIR)/coverage.out" $$(go list ./... | LC_ALL=C sort); \
+		go -C tools test -count=1 -shuffle=off -covermode=set -coverprofile="$(BUILD_DIR)/tools-coverage.out" ./...; \
+		actual=$$(go tool cover -func="$(BUILD_DIR)/coverage.out" | awk '/^total:/ {gsub(/%/, "", $$3); print $$3}'); \
+		echo "total coverage: $$actual% (floor 94.6%)"; \
+		awk -v actual="$$actual" 'BEGIN {if (actual == "" || actual < 94.6) exit 1}'; \
+		for profile in coverage tools-coverage; do \
+			LC_ALL=C sort "$(BUILD_DIR)/$$profile.out" > "$(BUILD_DIR)/$$profile-$$trial.sorted"; \
+			diff -u "$(BUILD_DIR)/$$profile-1.sorted" "$(BUILD_DIR)/$$profile-$$trial.sorted"; \
+		done; \
+	done
 	go -C tools run ./cmd/worktree-covercheck -root .. -base "$(QUALITY_BASE_REF)" -profiles "$(BUILD_DIR)/coverage.out,$(BUILD_DIR)/tools-coverage.out" -min 90
-	@actual=$$(go tool cover -func="$(BUILD_DIR)/coverage.out" | awk '/^total:/ {gsub(/%/, "", $$3); print $$3}'); awk -v actual="$$actual" 'BEGIN {if (actual < 94.6) exit 1}'; echo "total coverage: $$actual% (floor 94.6%)"
 
 native-build:
 	cmake -S firmware/esp32/tests -B "$(BUILD_DIR)/native" -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON

@@ -24,6 +24,7 @@ do not authorize skips or suppressions here.
 | At most 60 lines per native-tested C function | clang-tidy 19 readability-function-size, `make c-size` |
 | Changed executable coverage at least 90% | worktree-covercheck, including untracked implementation |
 | Root Go statement coverage at least 94.6% | `make coverage`, Sep 21 no-decrease baseline |
+| Stable covered blocks across three independent runs | `make coverage`, uncached set-mode profiles compared after sorting |
 | Whole Go modules linted, not only changed files | root, tools and firmware interoperability modules |
 | GitHub workflow syntax and contracts | pinned actionlint, `make workflows` |
 | Known reachable Go vulnerabilities | pinned govulncheck, `make audit` (live Go vulnerability database) |

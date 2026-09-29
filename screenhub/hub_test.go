@@ -3,6 +3,7 @@ package screenhub
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -15,6 +16,30 @@ import (
 func testConfig() Config {
 	return Config{ID: securetransport.DeviceID{1}, Key: securetransport.Key{2},
 		Size: display.Size{Width: 17, Height: 9}, Profile: 1, ProfileVersion: 1}
+}
+
+func TestCloseClosesReservedSocket(t *testing.T) {
+	h, err := New(testConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, b := net.Pipe()
+	t.Cleanup(func() { _ = a.Close(); _ = b.Close(); _ = h.Close() })
+	if err := h.reserve(a); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.SetReadDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(h.sockets) != 0 {
+		t.Fatal("closed hub retained sockets")
+	}
+	if _, err := b.Read(make([]byte, 1)); !errors.Is(err, io.EOF) {
+		t.Fatalf("peer must observe closed socket: %v", err)
+	}
 }
 
 func TestConfigurationAndClosedHub(t *testing.T) {

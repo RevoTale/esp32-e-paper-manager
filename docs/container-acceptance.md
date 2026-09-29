@@ -205,3 +205,36 @@ CGO-free Linux amd64/arm64 manager builds. The ESP32 application is 0xbc930
 bytes with 81% app-partition space free. Log: local ignored
 `build/quality-20260926.log`. This worktree has not yet had a new GitHub CI run;
 the Dev Container image was not rebuilt and no device was flashed.
+
+## 2026-09-29: coverage nondeterminism reproduced and guarded
+
+Three uncached engine runs with `-shuffle=off` returned 94.0%, 93.9%, 94.0%.
+Only `renderer.go`'s post-admission cancellation return changed coverage. An
+already-cancelled context and a free admission slot make both select branches
+ready; Go chooses pseudo-randomly, independently of test ordering. See the
+[language specification](https://go.dev/ref/spec#Select_statements).
+
+An added controlled context cancels at the post-acquisition error check. The
+test verifies cancellation precedes invalid-document parsing, returns no pixels,
+releases admission and permits the next render. Existing cancellation tests
+remain. Production code is unchanged.
+
+Sorted whole-module profiles exposed a second unstable block: closing sockets
+still registered in `screenhub.Close`. The old concurrent tests sometimes
+removed them first. A new test reserves a real net.Pipe without an authentication
+worker, closes the hub, checks the empty registry and peer EOF.
+
+`make coverage` now runs three separate uncached root/tools invocations with
+`-shuffle=off` and set-mode coverage. Root package arguments and profile records
+are sorted using the C locale; Go's canonical test declaration order is kept,
+not claimed to be alphabetical test-name order. Each run independently checks
+the unchanged 94.6% floor and profiles must match byte-for-byte after sorting.
+Profiles are never unioned across runs, which could hide intermittent coverage.
+The measured total is printed before a threshold failure. Race-test invocations
+also bypass the result cache. Three complete coverage runs passed with identical
+sorted profiles and 94.6% total; changed executable coverage was 100%.
+
+The focused `go test -race -count=3 -shuffle=731 ./engine ./screenhub` passed.
+The full `make quality` then passed with the new three-run coverage comparison,
+native/interop checks, TinyGo compilation, ESP-IDF and both Linux builds. This
+is local arm64 evidence; the subsequent GitHub amd64 run is a separate boundary.
