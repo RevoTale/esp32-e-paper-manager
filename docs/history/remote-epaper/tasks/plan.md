@@ -2,12 +2,12 @@
 
 Updated 2026-09-06 after the user's explicit migration approval. Execute
 [the pure-Go migration task list](pure-go-engine.md) under
-[ADR-013](../decisions/013-pure-go-render-engine.md). It supersedes the Blitz
+[ADR-013](../../../../decisions/013-pure-go-render-engine.md). It supersedes the Blitz
 choice below, carries forward uncompleted transport/security/timestamp work,
 and defers manual hardware testing until the candidate firmware is ready.
 
 E1/E2 update, 2026-09-07: the exact 67-file Rust/IPC source removal is recorded
-in [the preservation map](../docs/blitz-removal-map.md). The old renderer paths
+in [the preservation map](../../../blitz-removal-map.md). The old renderer paths
 and commands below are historical checkpoint instructions; active host entry
 points use the native Go engine. Ignored artifacts and physical experiments
 remain preserved. No container rebuild or physical acceptance is implied.

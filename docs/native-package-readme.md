@@ -1,5 +1,8 @@
 # Native e-paper candidate
 
+Historical package README template: relative links below target the generated
+Pico package layout, not this standalone ESP32 repository.
+
 Read the [operator guide](docs/native-candidate.md) before connecting or
 changing hardware. The package is unflashed and not physically accepted.
 Verify all files against `SHA256SUMS` before using the tools or firmware.

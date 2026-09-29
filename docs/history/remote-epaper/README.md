@@ -8,9 +8,9 @@ HTML та inline CSS тепер обробляє **Go manager**, не Pico. Ві
 WPA3-зв’язок і передає їх у RAM контролера без повного framebuffer на Pico.
 USB має пріоритет. Rust/Blitz більше не є активними залежностями.
 
-Починай з [інструкції для нового candidate](docs/native-candidate.md),
+Починай з [інструкції для нового candidate](../../native-candidate.md),
 [профілю HTML/CSS](SPEC-engine.md) та [плану міграції](tasks/pure-go-engine.md).
-Готовий пакет і точні результати: [приймання candidate](docs/native-candidate-acceptance.md).
+Готовий пакет і точні результати: [приймання candidate](../../native-candidate-acceptance.md).
 Нову прошивку ще потрібно фізично прийняти; успіх старих тестів не є доказом
 її роботи на екрані. Старі артефакти збережено для повернення до перевіреного стану.
 
@@ -34,7 +34,7 @@ USB-only і WPA3 TinyGo build компілюються. Фізичні 20 USB-п
 отримала HTML, локально відрендерила його й показала новий кадр `USB UPDATE`.
 Це перша прийнята передача, а не заміна ще не виконаної серії з 20 оновлень.
 Історія складного bring-up та його регресійні правила збережені в
-[`docs/epaper-debugging-history.md`](../../docs/epaper-debugging-history.md).
+[`docs/epaper-debugging-history.md`](../docs/epaper-debugging-history.md).
 
 ## Безпека перед підключенням
 
@@ -129,8 +129,8 @@ CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath \
   ніколи не надсилається Pico.
 - USB має пріоритет; активний фізичний refresh не переривається.
 
-Дивись [provisioning](docs/provisioning.md),
-[security/network](docs/security-network.md) і [operations](docs/operations-v2.md).
+Дивись [provisioning](../../provisioning.md),
+[security/network](../../security-network.md) і [operations](../../operations-v2.md).
 Публічно відкривається лише HTTPS manager/VPN; порт на Pico не форвардиться.
 Manager має dual-stack host networking, але target Pico IPv6 поки fail-closed
 через неповну підтримку адресної конфігурації у доступному embedded stack.

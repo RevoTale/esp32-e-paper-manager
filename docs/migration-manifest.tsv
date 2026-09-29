@@ -1,6 +1,10 @@
 # Source checkpoint: pico-sandbox 4380d8b1b89bc11375ac802c4d871e93fca344bc
 # Provisional inventory, not a completed source/link audit.
 source	destination	disposition
+-	docs/runtime-dependency-notices.md	new current compiled-manager dependency notice audit
+-	.clang-tidy	new native C function-size policy
+-	firmware/esp32/tests/function_size_policy.cmake	new positive and negative policy regression test
+-	firmware/esp32/tests/net_deadline_test.c	new deterministic socket deadline regression test; existing timing gate retained
 -	.devcontainer/Dockerfile	new or pre-existing destination file; review provenance
 -	.devcontainer/devcontainer.json	new or pre-existing destination file; review provenance
 -	.dockerignore	new or pre-existing destination file; review provenance
@@ -731,3 +735,8 @@ experiments/03-remote-epaper/update/result_codec.go	update/result_codec.go	impor
 experiments/03-remote-epaper/update/result_codec_test.go	update/result_codec_test.go	imported; review transformation and links
 experiments/03-remote-epaper/waveshare75/adapter.go	waveshare75/adapter.go	imported; review transformation and links
 experiments/03-remote-epaper/waveshare75/adapter_test.go	waveshare75/adapter_test.go	imported; review transformation and links
+experiments/03-remote-epaper/blitz-probe/README.md	docs/history/remote-epaper/blitz-probe/README.md	verbatim historical research; not an active build instruction
+experiments/03-remote-epaper/deploy/pi5/README.md	docs/history/remote-epaper/deploy/pi5/README.md	verbatim historical Pi5 deployment; implementation remains in parent
+experiments/03-remote-epaper/deploy/pi5/SERVICE.md	docs/history/remote-epaper/deploy/pi5/SERVICE.md	verbatim historical Pi5 service; implementation remains in parent
+experiments/03-remote-epaper/deploy/pi5/deb/README.md	docs/history/remote-epaper/deploy/pi5/deb/README.md	verbatim historical Pi5 packaging; implementation remains in parent
+experiments/03-remote-epaper/panel154b/SOURCES.md	docs/history/remote-epaper/panel154b/SOURCES.md	verbatim alternate-panel references; not the current 7.5-inch driver

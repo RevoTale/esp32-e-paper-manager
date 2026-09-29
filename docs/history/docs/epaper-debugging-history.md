@@ -154,7 +154,7 @@ connection. HAT `PWR` is a logic-controlled power-enable signal driven by
   and measured energy/resource acceptance are still open. The buffered path
   remains available for recovery; this checkpoint does not replace it.
 - Exact host artifact hashes, invocation and TLS compatibility evidence:
-  [S5 manager test](../experiments/03-remote-epaper/docs/screen-manager-usb.md).
+  [S5 manager test](../../screen-manager-usb.md).
 
 ### Historical first visible control — 2026-09-02
 

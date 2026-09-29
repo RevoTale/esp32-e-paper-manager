@@ -4,7 +4,7 @@ Historical handoff, superseded 2026-09-07: current Go rendering uses bounded
 PNG/JPEG assets without BZR IPC or Rust. Both deferred image geometry cases now
 have active native tests. Earlier failures, commands and measurements below
 remain checkpoint evidence, not the current support contract. See
-[SPEC-engine.md](../SPEC-engine.md) and [removal map](blitz-removal-map.md).
+[SPEC-engine.md](history/remote-epaper/SPEC-engine.md) and [removal map](blitz-removal-map.md).
 
 Recorded 2026-09-06. Bounded PNG `<img>` support is enabled through Go scene
 preparation → BZR2 → the real Blitz beta.2 executable → monochrome bitmap.

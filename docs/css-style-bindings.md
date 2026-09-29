@@ -2,7 +2,7 @@
 
 Historical cross-parser design, superseded 2026-09-07: Rust `SceneScope` and
 BZR bindings were removed. One native HTML5 tree now owns inline declarations
-under [SPEC-engine.md](../SPEC-engine.md). Earlier commands and measurements
+under [SPEC-engine.md](history/remote-epaper/SPEC-engine.md). Earlier commands and measurements
 remain checkpoint evidence; see [the removal map](blitz-removal-map.md).
 
 `SceneScope::styles()` discovers CSS in the actual Blitz DOM and binds specified

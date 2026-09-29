@@ -10,7 +10,7 @@ complete ESP32 receiver after confirming its diagnostic rectangle. The small
 1.54-inch tricolor profile below remains a preserved, unaccepted alternative.
 Do not carry its two-color format or timing into the active target.
 
-Follow [the ESP32 receiver plan](../experiments/03-remote-epaper/tasks/esp32-75.md).
+Follow [the ESP32 receiver plan](../remote-epaper/tasks/esp32-75.md).
 Reuse the native Go manager, EPS2, authenticated EPN2 sessions and exact accepted
 7.5 panel sequence. New board adapters must not weaken Pico's security policy.
 
@@ -114,7 +114,7 @@ The upstream espradio v0.3.0 HTTP example linked for `esp32-coreboard-v2`:
 probe, not Wi-Fi, authentication, heap-usage or power-consumption acceptance.
 
 The diagnostic and flashing instructions are in
-[experiment 12](../experiments/12-esp32-epaper/README.md). No repeated board photo
+[experiment 12](../esp32/README.md). No repeated board photo
 is required; verify the actual switch labels before first hardware operation.
 No `/dev/ttyUSB*` or `/dev/ttyACM*` device was visible in the matching container
 at the latest check; this does not establish whether macOS can see the board.

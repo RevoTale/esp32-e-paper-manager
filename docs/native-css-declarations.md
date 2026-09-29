@@ -3,7 +3,7 @@
 Historical Rust meaning of "native", superseded 2026-09-07: this opt-in
 Stylo/csscheck component was removed, not promoted into the Go renderer.
 Current native declarations live in `engine/style`; follow
-[SPEC-engine.md](../SPEC-engine.md) and [the removal map](blitz-removal-map.md).
+[SPEC-engine.md](history/remote-epaper/SPEC-engine.md) and [the removal map](blitz-removal-map.md).
 
 Status: implemented as opt-in `csscheck::Validator::native()` on pinned
 cssparser 0.37.0 / Stylo 0.20.0. `Default`, public grammar functions and the

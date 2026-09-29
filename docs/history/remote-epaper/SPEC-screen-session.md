@@ -48,7 +48,7 @@ accepting D8. A panel sink still writes its own bounded inversion chunks.
 EPS2 uses Hello/Acquire/Bind/Begin/Data/Commit/Query/Abort/Reply, with fixed typed
 capability and diagnostic bodies rather than arbitrary key/value extensions.
 Exact offsets/enums and reply-correlation rules are frozen in
-[EPS2 wire contract](docs/eps2-wire.md) with independent codec tests.
+[EPS2 wire contract](../../eps2-wire.md) with independent codec tests.
 
 EPN2 carries exactly **one complete EPS2 record per AEAD envelope**, in both
 directions. TCP may split ciphertext arbitrarily; an EPS2 record may not be
@@ -66,7 +66,7 @@ minimum cadence/remaining cooldown, public boot identity and provisioned device 
 The baseline encoding is raw canonical mono1, MSB-left, 0 white / 1 black,
 zero row padding. Optional negotiated PackBits now has bounded decode, fault,
 two-plane replay and measured wire-byte evidence in
-[the compression contract](docs/eps2-compression.md). No unknown capability
+[the compression contract](../../eps2-compression.md). No unknown capability
 implicitly enables partial refresh or compressed input.
 
 The secure record bound is now decoupled from the historical 284-byte display
@@ -148,7 +148,7 @@ disabled. A generic UF2 contains no user's key or WLAN secret.
 
 The physical control protocol is EPCQ/EPCR v2, with stable result codes and an
 explicit unknown-storage state; the persisted EPC2 journal stays v1. See
-[provisioning](docs/provisioning.md). Fencing includes unbound authenticated
+[provisioning](../../provisioning.md). Fencing includes unbound authenticated
 connections and queued old-auth work, not just the current pixel writer.
 `screenlink.Reconfigure` revokes existing connection instances; the unified
 owner additionally gates new network opens by its own non-wrapping auth access
@@ -161,7 +161,7 @@ external HTTPS listener can serve both IP families. Router exposure and TLS
 deployment are operator work, not mutations authorized by firmware development.
 
 Connection roles and nonce lifetime are specified in
-[ADR-014](decisions/014-durable-device-sessions.md). Pico is the TCP dialer but
+[ADR-014](../../../decisions/014-durable-device-sessions.md). Pico is the TCP dialer but
 uses the existing cryptographic Device role; the manager supplies OS-generated
 randomness. `EPN2` has an exact 20-byte public preface and no legacy fallback.
 

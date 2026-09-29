@@ -14,7 +14,7 @@
   streaming firmware; no HTML/Blitz/manager, reset or wiring change. S4 resend
   and the earlier live S6 remain failed tests; their cause is not established. The
   latest full manager-path success remains S5. Exact frame/client hashes and
-  evidence: [debugging history](../../docs/epaper-debugging-history.md).
+  evidence: [debugging history](../docs/epaper-debugging-history.md).
 - Static HTML admission now rejects active content before PNG decoding/worker
   startup in native and bitmap paths. Five tests pass; independent review found
   details/summary were initially missed, reproduced and corrected with active
@@ -23,7 +23,7 @@
 - Final task gate PASS 17s, zero new lint issues, 93.6% changed / 90.2% total
   coverage. New gate: 23/23 changed executable lines covered. Focused race tests
   pass. USB/Wi-Fi build sizes and Rust 131-pass/3-ignore state are unchanged.
-  See [static HTML boundary](docs/static-html-admission.md).
+  See [static HTML boundary](../../static-html-admission.md).
 - S6 image scene rendered via actual Go/BZR4/Blitz and was visually checked;
   heading, two PNG copies and fixed corner label are present. Fresh macOS arm64
   manager/USB binaries were prepared separately from S5. After explicit host
@@ -31,7 +31,7 @@
   then manager stopped cleanly with exit 0. No reflash/reset/USB reattachment;
   unchanged 180s startup guard. User subsequently reported S5 still visible:
   S6 physical acceptance FAILED despite protocol completion. Cause is not yet
-  established; no automatic resend. [S6 evidence](docs/screen-manager-usb.md).
+  established; no automatic resend. [S6 evidence](../../screen-manager-usb.md).
 
 ### Preceding checked source identity checkpoint
 
@@ -49,7 +49,7 @@
   Final task gate PASS 16s, zero new lint issues, 93.5% changed / 90.2% total
   coverage. Focused worker/manager/diagnostic race tests pass. USB flash/RAM
   237724/105564 bytes; Wi-Fi 699804/112156, unchanged. Six pre-existing file-length
-  debts remain reported. See [identity contract](docs/css-source-identity.md).
+  debts remain reported. See [identity contract](../../css-source-identity.md).
 - No new dependency, ignore, firmware change, flash, USB transfer, commit or
   push. S5 remains the last accepted visible scene. Fallback authorization,
   computed bounds, full profile and public-input isolation remain open.
@@ -69,7 +69,7 @@
   checks pass. Go task gate PASS 19s, zero new lint issues, 93.5% changed/90.2%
   total Go coverage. USB flash/RAM 237724/105564 bytes; Wi-Fi 699804/112156,
   unchanged. The six pre-existing file-length debts remain visible.
-- See [CSS binding contract](docs/css-style-bindings.md). Local bindings remain
+- See [CSS binding contract](../../css-style-bindings.md). Local bindings remain
   opt-in with native-core validation for all targets. Checked Go/Blitz source
   identity, fallback authorization/extraction, computed bounds and public-input
   isolation remain open. BZR3, firmware, USB and physical S5 acceptance are
@@ -89,7 +89,7 @@
   Go task gate PASS 16s, zero new lint issues, 93.5% changed/90.2% total Go
   coverage. USB flash/RAM 237724/105564 bytes; Wi-Fi 699804/112156, unchanged.
   The six pre-existing file-length debts remain visible.
-- See [target ownership contract](docs/css-target-ownership.md). Whole-rule and
+- See [target ownership contract](../../css-target-ownership.md). Whole-rule and
   inline-declaration integration, fallback policy/extraction, stable render-object
   identity and public-input isolation remain open. BZR3, firmware, USB and S5
   physical acceptance are unchanged. No dependency change, new ignore, flash,
@@ -104,7 +104,7 @@
 - A real-render fixture confirms that a stylesheet inside a bitmap-marked
   subtree changes an outside box. This guards against inferring CSS scope from
   the marker; actual ownership/extraction was not implemented at that checkpoint. See
-  [selector and fallback boundaries](docs/native-css-selectors.md).
+  [selector and fallback boundaries](../../native-css-selectors.md).
 - Formatting, all-target Clippy deny-warnings and `git diff --check` pass.
   Go task gate PASS 18s, zero new lint issues, 93.5% changed/90.2% total Go
   coverage. USB flash/RAM 237724/105564 bytes; Wi-Fi 699804/112156, unchanged.
@@ -128,7 +128,7 @@
   ownership, font/background assets, broad shorthand resets and computed bounds
   remain required before integration. Specified-value caps do not establish a
   public-input sandbox or complete CSS support. See
-  [native declaration contract](docs/native-css-declarations.md).
+  [native declaration contract](../../native-css-declarations.md).
 - No firmware flash or physical acceptance in this increment; last accepted
   visible streaming scene remains S5. No dependency upgrade, commit or push.
 
@@ -147,7 +147,7 @@
   approved image ignores and one failure exposing incorrect containing-block selection through a static
   wrapper. The user subsequently approved BLITZ-POS-001: ignore only this exact
   engine reproduction without altering its assertions or patching Blitz. Full
-  CSS conformance remains unaccepted. See [reproduction](docs/blitz-positioning-gap.md).
+  CSS conformance remains unaccepted. See [reproduction](../../blitz-positioning-gap.md).
 - After the deferral: Rust `--no-fail-fast` passes with 66 active passes, exactly
   three approved ignores (two image, one positioning), zero failures. Formatting
   and all-target Clippy with warnings denied pass. The exact `--ignored --exact`
@@ -548,4 +548,4 @@ approved image-layout ignores, 0 fail. Formatting and all-target Clippy pass.
 Real Go preview visually confirms readable Ukrainian text, inline alignment,
 boxes and viewport-relative placement. No production code, firmware or hardware
 change; this is not a new physical checkpoint. Exact fixture scope, commands,
-review and remaining profile gates: [`blitz-viewport-css.md`](docs/blitz-viewport-css.md).
+review and remaining profile gates: [`blitz-viewport-css.md`](../../blitz-viewport-css.md).

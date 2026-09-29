@@ -151,7 +151,7 @@ repeated alpha composition. Wrapped decorations are sliced: side edges/radii
 are not cloned at line breaks, and backgrounds continue across the stitched
 fragments. Physical ends follow the parent's inline progression. The detailed
 baseline/fragment contract and source references are in
-[native inline layout](docs/engine-inline-layout.md).
+[native inline layout](../../engine-inline-layout.md).
 Multiline positioned inline ancestors use the
 enclosing fragment rectangle, an explicit deterministic choice for CSS2.2's
 undefined multiline case. Ellipsis preserves original line metrics even when

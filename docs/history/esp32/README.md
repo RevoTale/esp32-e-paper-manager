@@ -2,7 +2,7 @@
 
 Status: 7.5-inch V2 diagnostic visibly accepted; 1.54-inch B V2 not accepted.
 Neither diagnostic is the complete remote-display firmware.
-Pico and Pi5 remain unchanged. Current investigation: [port notes](../../docs/esp32-port.md).
+Pico and Pi5 remain unchanged. Current investigation: [port notes](../docs/esp32-port.md).
 
 ## Accepted 7.5-inch checkpoint
 
@@ -18,7 +18,7 @@ The latter enables the serial bridge; it is not a master power switch.
 Keep this tested assembly unchanged. Conflicting revision-specific A/B tables
 must not be generalized to another board; see the debugging history.
 This accepts one frame, not repeat updates, streaming, Wi-Fi or measured energy.
-Full receiver work follows [the plan](../03-remote-epaper/tasks/esp32-75.md).
+Full receiver work follows [the plan](../remote-epaper/tasks/esp32-75.md).
 
 ## Build
 

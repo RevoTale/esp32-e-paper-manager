@@ -2,7 +2,7 @@
 
 Historical cross-parser boundary, superseded 2026-09-07: BZR source manifests
 and the Go/Rust adapter were removed. A single native HTML5 tree owns inline
-declarations under [SPEC-engine.md](../SPEC-engine.md). Commands below require
+declarations under [SPEC-engine.md](history/remote-epaper/SPEC-engine.md). Commands below require
 checkpoint `37a1471`; [the removal map](blitz-removal-map.md) records the migration.
 
 Implemented and host-verified, 2026-09-06. This increment connects the local DOM source

@@ -35,7 +35,7 @@ The new software candidate advertises configurable refresh policy; upgrade
 the Go manager and USB tools with it. `-refresh-policy` enables a separately
 bounded urgent lane, not partial refresh or BUSY bypass. Default normal180s /
 urgent30s are operator policies; shorter intervals are not manufacturer safety
-guarantees. See [the contract](../../03-remote-epaper/docs/refresh-priority.md).
+guarantees. See [the contract](../../refresh-priority.md).
 The same logical1-bit bitmap is sent twice: old-plane bytes are inverted for
 command0x10; new-plane bytes are unchanged for0x13. A64-byte scratch buffer
 matches original ESP32 non-DMA SPI limits; no additional48000-byte framebuffer

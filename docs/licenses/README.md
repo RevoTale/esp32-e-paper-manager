@@ -1,7 +1,11 @@
 # Pinned toolchain notices
 
 These are unmodified upstream license texts, not an independent legal review.
-Run `sha256sum -c docs/licenses/SHA256SUMS` from the experiment directory.
+Run `sha256sum -c docs/licenses/SHA256SUMS` from the repository root.
+
+This is the historical TinyGo 0.41.1 qualification inventory, not a complete
+notice inventory for the current TinyGo 0.42.0 / ESP-IDF 5.5.5 toolchain or the
+Debian runtime image. Do not use it alone to approve a standalone release.
 
 - `TinyGo-0.41.1-LICENSE`: `LICENSE` from the verified
   `github.com/tinygo-org/tinygo@v0.41.1` Go module.

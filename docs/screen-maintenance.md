@@ -1,7 +1,7 @@
 # Confirmed pixels, full-cycle stamps, and maintenance
 
 This manager-only contract implements the C3/C4 scheduling boundary in
-[SPEC-screen-session](../SPEC-screen-session.md). It does not establish optical
+[SPEC-screen-session](history/remote-epaper/SPEC-screen-session.md). It does not establish optical
 panel acceptance, change the refresh waveform, or enable partial refreshes.
 
 ## Construction and ownership

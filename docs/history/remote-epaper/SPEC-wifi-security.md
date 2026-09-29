@@ -3,7 +3,7 @@
 > Historical foundation. The active migration uses WPA3-SAE only, physical USB
 > journal provisioning and Pico-initiated EPN2/EPS2, not the legacy WPA2/ldflags
 > composition below. See [screen sessions](SPEC-screen-session.md) and
-> [durable-session ADR](decisions/014-durable-device-sessions.md).
+> [durable-session ADR](../../../decisions/014-durable-device-sessions.md).
 
 Status: approved automatically by user policy on 2026-08-30.
 

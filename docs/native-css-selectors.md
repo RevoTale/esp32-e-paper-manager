@@ -3,7 +3,7 @@
 Historical Rust/selector scope, superseded 2026-09-07: this component and its
 worker were removed. Current native rendering deliberately accepts inline-only
 CSS and has no selector-driven bitmap fallback. Follow
-[SPEC-engine.md](../SPEC-engine.md) and [the removal map](blitz-removal-map.md).
+[SPEC-engine.md](history/remote-epaper/SPEC-engine.md) and [the removal map](blitz-removal-map.md).
 
 `csscheck::Validator::native()` checks the selector syntax admitted by the
 manager profile as well as declaration values. It remains opt-in: BZR3 still

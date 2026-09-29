@@ -2,7 +2,7 @@
 
 Historical worker validation, superseded 2026-09-07: the Rust grammar adapter
 was removed. Current inline-only validation lives in `engine/style` under
-[SPEC-engine.md](../SPEC-engine.md). The commands/status below refer to
+[SPEC-engine.md](history/remote-epaper/SPEC-engine.md). The commands/status below refer to
 checkpoint `37a1471`; see [the removal map](blitz-removal-map.md).
 
 Status: grammar validation is integrated into the manager's checked local worker

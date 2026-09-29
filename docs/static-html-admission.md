@@ -2,7 +2,7 @@
 
 Historical implementation, superseded 2026-09-07: the Go/Blitz adapter was
 removed. Current admission uses one bounded native HTML5 tree and inline-only
-CSS under [SPEC-engine.md](../SPEC-engine.md). The original boundary and tests
+CSS under [SPEC-engine.md](history/remote-epaper/SPEC-engine.md). The original boundary and tests
 below are checkpoint evidence; see [native replacements](blitz-removal-map.md).
 
 Implemented 2026-09-06 in Go `blitzworker`, enforcing ADR-009 on the canonical

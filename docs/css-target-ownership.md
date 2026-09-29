@@ -3,7 +3,7 @@
 Historical selector/bitmap design, superseded 2026-09-07: this Rust component
 was removed with the checked IPC worker. The native Go profile has one HTML5
 tree and inline-only styles, not selector-based fallback authorization. See
-[SPEC-engine.md](../SPEC-engine.md) and [the removal map](blitz-removal-map.md).
+[SPEC-engine.md](history/remote-epaper/SPEC-engine.md) and [the removal map](blitz-removal-map.md).
 
 `blitz-probe::domscope::SceneScope` maps a native selector to actual elements in
 one already parsed Blitz document. This is an isolated manager-side foundation,

@@ -181,7 +181,7 @@ high-water mark. Query after lost Commit ACK before any retry: unchanged lease,
 ID and digest plus Complete/current proof permits zero additional SPI. Unknown
 boot/lease or evicted evidence requires new full resynchronization, respecting
 cooldown. AEAD nonces/counters always belong to the fresh crypto connection,
-never to screen IDs. See [session lifecycle](../SPEC-screen-session.md).
+never to screen IDs. See [session lifecycle](history/remote-epaper/SPEC-screen-session.md).
 
 `screenclient` retains pending acquisition/update identity across Connect calls.
 Lost Acquire ACK permits Hello reporting G+1 only through retrying the original

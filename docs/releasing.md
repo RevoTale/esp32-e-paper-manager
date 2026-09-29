@@ -4,6 +4,12 @@ The publishing workflow is prepared, not yet exercised on GitHub. No image
 digest exists from this migration. Do not treat example image names as available
 releases.
 
+Publication also requires resolution of the current
+[runtime dependency notice audit](runtime-dependency-notices.md). In particular,
+the renderer imports an LGPL-labelled package and a pinned module with missing
+root license text. No blanket MIT-only dependency claim has been established,
+and the runtime image does not yet include a complete application notice bundle.
+
 An explicitly authorized version-tag push triggers the complete reusable quality
 workflow, then publication to `ghcr.io/revotale/esp32-e-paper-manager`. Publication
 is restricted to this repository, version tags and commits reachable from main.
@@ -23,6 +29,8 @@ Before calling a release production-ready, verify:
 3. API authentication and readonly/non-root operation work in the image.
 4. The published manifest and revision match the selected commit.
 5. Authorized hardware delivery is visible and recovery/rollback was checked.
+6. `make latency` passed separately in the recorded qualification environment;
+   ordinary `make quality` does not certify real-time scheduling latency.
 
 Current base images use explicit version tags, not digest pins. Resolving and
 recording base-image digests remains part of the independent image acceptance;

@@ -4,7 +4,7 @@ One Go manager, one generic TinyGo Pico 2 W firmware. HTML stays on the host:
 HTML5 → typed inline CSS → viewport layout → Canvas CPU paint → 1-bit frame →
 EPS2 Raw/PackBits → bounded Pico buffer → both controller RAM planes → refresh.
 No Blitz worker, Rust runtime, GPU, Bluetooth session or on-Pico HTML parser.
-See [engine profile](../SPEC-engine.md) for supported syntax and explicit limits.
+See [engine profile](history/remote-epaper/SPEC-engine.md) for supported syntax and explicit limits.
 
 ## Accepted USB checkpoint
 
