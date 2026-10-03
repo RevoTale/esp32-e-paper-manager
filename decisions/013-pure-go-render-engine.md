@@ -3,7 +3,7 @@
 ## Status
 
 Accepted direction, 2026-09-06. Implementation and acceptance are tracked in
-`../tasks/pure-go-engine.md`. The user authorizes research, necessary design
+[the archived migration plan](https://github.com/RevoTale/esp32-e-paper-manager/blob/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/remote-epaper/tasks/pure-go-engine.md). The user authorizes research, necessary design
 corrections, migration and non-Go renderer removal. Manual panel checks are
 deferred until the complete firmware is ready. This is not hardware acceptance.
 

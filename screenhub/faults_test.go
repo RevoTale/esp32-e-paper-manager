@@ -142,12 +142,20 @@ func TestServeClosesListenerAndBoundedHandshakeOnCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- h.Serve(ctx, listener) }()
+	observed := &progressListener{Listener: listener, secondAccept: make(chan struct{})}
+	go func() { done <- h.Serve(ctx, observed) }()
 	socket, err := net.Dial("tcp", listener.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = socket.Close() }()
+	select {
+	case <-observed.secondAccept:
+	case err := <-done:
+		t.Fatalf("Serve stopped before handshake admission: %v", err)
+	case <-time.After(time.Second):
+		t.Fatal("Serve did not admit socket")
+	}
 	cancel()
 	select {
 	case err := <-done:

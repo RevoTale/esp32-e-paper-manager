@@ -83,7 +83,7 @@ func (a *ScreenAPI) mutate(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "invalid_refresh_options")
 		return
 	}
-	if options.Mode == refreshpolicy.Partial || (options.Priority == refreshpolicy.Urgent && !a.screen.refreshEnabled) {
+	if (options.Mode == refreshpolicy.Partial && !a.screen.partialEnabled) || (options.Priority == refreshpolicy.Urgent && !a.screen.refreshEnabled) {
 		writeError(w, 501, "refresh_unsupported")
 		return
 	}

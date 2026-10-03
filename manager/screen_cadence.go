@@ -26,13 +26,40 @@ func NewScreenPumpWithPolicy(screen *Screen, sender ScreenSender, policy refresh
 	return p, nil
 }
 
-func (s *Screen) pendingUrgent() bool {
+// ConfigurePartial opts into mode-aware scheduling before Run. The caller must
+// serialize configuration with startup. Geometry/count limits belong to Screen;
+// the transport negotiates support and enforces the same cadence on the wire.
+func (p *ScreenPump) ConfigurePartial(policy refreshpolicy.Policy) error {
+	if p.screen.pumping.Load() {
+		return ErrConflict
+	}
+	if p.urgent == 0 || p.screen.cycles == nil || p.screen.cycles.partialOptions == nil {
+		return ErrConfiguration
+	}
+	sender, ok := p.sender.(screendelivery.RegionPolicySender)
+	if !ok {
+		return ErrConfiguration
+	}
+	if err := sender.ConfigurePartial(policy); err != nil {
+		return err
+	}
+	p.partialPolicy = policy
+	p.screen.partialEnabled = true
+	return nil
+}
+
+func (s *Screen) pendingOptions() refreshpolicy.Options {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.cycles != nil && (s.cycles.resync || s.maintenanceDue(s.elapsed())) {
-		return false
+		return refreshpolicy.Options{Mode: refreshpolicy.Full}
 	}
-	return s.options.Priority == refreshpolicy.Urgent
+	options := s.options
+	if s.cycles == nil || s.cycles.partialOptions == nil || s.baseline == nil ||
+		!s.state.RefreshTrusted || s.cycles.partials >= s.cycles.partialOptions.MaxConsecutive {
+		options.Mode = refreshpolicy.Full
+	}
+	return options
 }
 
 func (r *screenRecovery) postponeReadiness(state screendelivery.Readiness) {
@@ -44,6 +71,7 @@ func (r *screenRecovery) postponeReadiness(state screendelivery.Readiness) {
 		urgent = state.NotBefore
 	}
 	r.urgentCooldown = max(0, r.urgentCooldown-elapsed, urgent.Sub(now))
+	r.postponePartialReadiness(state, now, elapsed)
 	r.started = r.pump.screen.elapsed()
 }
 
@@ -54,8 +82,34 @@ func (r *screenRecovery) completed() {
 	if r.pump.urgent > 0 {
 		r.urgentCooldown = r.pump.urgent
 	}
+	r.partialCooldown, r.partialUrgentCooldown = r.cooldown, r.urgentCooldown
+	if r.pump.partialPolicy.Normal > 0 {
+		r.partialCooldown = r.pump.partialPolicy.Normal
+		r.partialUrgentCooldown = r.pump.partialPolicy.Urgent
+	}
 }
 
-func (r *screenRecovery) urgentRemaining() time.Duration {
-	return max(0, r.urgentCooldown-(r.pump.screen.elapsed()-r.started))
+// Auto is not partial permission: only a prepared delivery can select the
+// shorter lane. Geometry, baseline trust and maintenance can require full.
+func (r *screenRecovery) remainingFor(options refreshpolicy.Options) time.Duration {
+	normal, urgent := r.cooldown, r.urgentCooldown
+	if options.Mode == refreshpolicy.Partial && r.pump.partialPolicy.Normal > 0 {
+		normal, urgent = r.partialCooldown, r.partialUrgentCooldown
+	}
+	if options.Priority == refreshpolicy.Urgent {
+		normal = urgent
+	}
+	return max(0, normal-(r.pump.screen.elapsed()-r.started))
+}
+
+func (r *screenRecovery) postponePartialReadiness(state screendelivery.Readiness, now time.Time, elapsed time.Duration) {
+	normal, urgent := state.PartialNotBefore, state.PartialUrgentNotBefore
+	if normal.IsZero() {
+		normal = state.NotBefore
+	}
+	if urgent.IsZero() {
+		urgent = normal
+	}
+	r.partialCooldown = max(0, r.partialCooldown-elapsed, normal.Sub(now))
+	r.partialUrgentCooldown = max(0, r.partialUrgentCooldown-elapsed, urgent.Sub(now))
 }

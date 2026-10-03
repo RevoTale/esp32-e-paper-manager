@@ -13,6 +13,7 @@ static bool shape(const ep_record *r) {
     case 3: return r->epoch && !r->id && r->size == 32;
     case 4: case 6: case 7: return r->epoch && r->id && r->size == 32;
     case 13: return r->epoch && r->id && r->size == 44;
+    case 14: return r->epoch && r->id && r->size == 148;
     case 8: return r->epoch && !r->id && !r->size;
     case 9: return r->size == 48 || r->size == 88 || r->size == 56 || r->size == 84;
     default: return false;

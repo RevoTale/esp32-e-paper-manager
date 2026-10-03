@@ -9,6 +9,7 @@
 #include "esp_task_wdt.h"
 #include "mbedtls/platform_util.h"
 #include "freertos/task.h"
+#include "sdkconfig.h"
 
 static ep_runtime runtime;
 static void stop(void) { for (;;) vTaskDelay(portMAX_DELAY); }
@@ -29,6 +30,10 @@ void app_main(void) {
     ep_sink sink = ep_display_guard(ep_panel75_create(&r->panel, io));
     const ep_screen_config profile = {800, 480, 1000, 1, 2, 1, 180000};
     if (!ep_screen_init(&r->screen, profile, sink, boot, id)) { stop(); return; }
+#if CONFIG_EP_EXPERIMENTAL_PARTIAL
+    // Same RTC guard/context and completion cleanup as full refresh.
+    if (!ep_screen_regions(&r->screen, ep_display_guard_regions(ep_panel75_regions()))) { stop(); return; }
+#endif
     // Keep USB Inspect/Health alive on storage/display initialization failure.
     // A fatal screen rejects Begin before any sink callback can touch hardware.
     r->screen.fatal = recovery || !r->boot_safe || !display_ready;

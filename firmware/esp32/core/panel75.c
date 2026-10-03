@@ -3,8 +3,7 @@
 
 // Exact 7.5 V2 lifecycle, not the 1.54 tri-colour or 2.13 controller:
 // https://github.com/waveshareteam/Pico_ePaper_Code/blob/c9bcd84db5adf5f085353649a8a5c31492bc5fb8/c/lib/e-Paper/EPD_7in5_V2.c
-static int begin(void *context) {
-    ep_panel75 *p = context;
+int ep_panel75_start(ep_panel75 *p) {
     if (p->active) return -1;
     if (p->cycle < UINT32_MAX) p->cycle++;
     p->state = p->phase = 1; p->step = 3; p->failed = false;
@@ -21,6 +20,13 @@ static int begin(void *context) {
     io->delay_us(io->context, 2000);
     if (io->pin(io->context, EP_RESET, true)) return ep_panel_error(p);
     io->delay_us(io->context, 20000);
+    return 0;
+}
+static int begin(void *context) {
+    ep_panel75 *p = context;
+    if (ep_panel75_start(p)) return -1;
+    p->partial = false; p->plane_bytes = 48000;
+    ep_panel_io *io = &p->io;
     const uint8_t power[] = {7, 7, 0x3f, 0x3f}, boost[] = {0x17, 0x17, 0x28, 0x17};
     if (ep_panel_command(p, 1, power, sizeof power) ||
         ep_panel_command(p, 6, boost, sizeof boost) || ep_panel_command(p, 4, NULL, 0)) return -1;
@@ -34,23 +40,24 @@ static int begin(void *context) {
 }
 static int write_pixels(void *context, uint8_t pass, uint32_t offset, const uint8_t *bytes, size_t n) {
     ep_panel75 *p = context;
-    if (!p->active || pass != p->pass || pass > 1 || offset != p->offset ||
-        !n || n > 48000 - offset) return -1;
+    if (!p->active || p->failed || pass != p->pass || pass > 1 || offset != p->offset ||
+        !bytes || !n || offset > p->plane_bytes || n > p->plane_bytes - offset) return -1;
     if (!offset && ep_panel_command(p, pass ? 0x13 : 0x10, NULL, 0)) return -1;
     uint8_t scratch[64];
     for (size_t at = 0; at < n;) {
         size_t count = n - at < sizeof scratch ? n - at : sizeof scratch;
-        for (size_t i = 0; i < count; i++) scratch[i] = pass ? bytes[at + i] : (uint8_t)~bytes[at + i];
+        for (size_t i = 0; i < count; i++)
+            scratch[i] = !p->partial && pass ? bytes[at + i] : (uint8_t)~bytes[at + i];
         if (ep_panel_data(p, scratch, count)) return -1;
         at += count;
     }
     p->offset += (uint32_t)n;
-    if (p->offset == 48000) { p->offset = 0; p->pass++; }
+    if (p->offset == p->plane_bytes) { p->offset = 0; p->pass++; }
     return 0;
 }
 static int commit(void *context) {
     ep_panel75 *p = context;
-    if (!p->active || p->pass != 2) return -1;
+    if (!p->active || p->failed || p->pass != 2) return -1;
     if (ep_panel_command(p, 0x12, NULL, 0)) return -1;
     p->io.delay_us(p->io.context, 100000);
     if (ep_panel_ready(p, 30000000) || ep_panel_sleep(p)) return -1;

@@ -76,7 +76,7 @@ func (h *Hub) connect(ctx context.Context, p *peer) (screendelivery.Readiness, e
 		h.disconnect()
 		return screendelivery.Readiness{}, ErrProfile
 	}
-	if h.cadence.Enabled() && caps.Features&screenwire.FeatureRefreshPolicy == 0 {
+	if !h.cadence.Supports(caps) {
 		h.disconnect()
 		return screendelivery.Readiness{}, screenclient.ErrUnsupportedRefresh
 	}
@@ -98,8 +98,9 @@ func (h *Hub) connect(ctx context.Context, p *peer) (screendelivery.Readiness, e
 		ready.Pending = screendelivery.PendingConfirmed
 	}
 	h.cooldown() // Lost ACK does not prove when the physical refresh finished.
-	ready.NotBefore = h.floor
-	ready.UrgentNotBefore = h.floor
+	outcome := ready.Pending
+	ready = h.cadence.Ready(h.floor)
+	ready.Pending = outcome
 	return ready, nil
 }
 
@@ -108,6 +109,10 @@ func (h *Hub) Send(ctx context.Context, frame display.Frame) error {
 }
 
 func (h *Hub) SendWithOptions(ctx context.Context, frame display.Frame, options refreshpolicy.Options) error {
+	return h.send(ctx, options, func() error { return h.sendFrame(frame, options) })
+}
+
+func (h *Hub) send(ctx context.Context, options refreshpolicy.Options, transmit func() error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -120,14 +125,7 @@ func (h *Hub) SendWithOptions(ctx context.Context, frame display.Frame, options 
 	p := h.current
 	stop := context.AfterFunc(ctx, func() { _ = p.socket.Close() })
 	defer stop()
-	var err error
-	if h.cadence.Enabled() {
-		err = h.client.SendWithOptions(frame, options, h.cadence.Policy)
-	} else if options.Priority == refreshpolicy.Urgent || options.Mode == refreshpolicy.Partial {
-		return screenclient.ErrUnsupportedRefresh
-	} else {
-		err = h.client.Send(frame)
-	}
+	err := transmit()
 	if err == nil {
 		if h.cadence.Enabled() {
 			h.floor = h.cadence.Complete(h.now())
@@ -143,13 +141,23 @@ func (h *Hub) SendWithOptions(ctx context.Context, frame display.Frame, options 
 	return translate(err)
 }
 
+func (h *Hub) sendFrame(frame display.Frame, options refreshpolicy.Options) error {
+	if h.cadence.Enabled() {
+		return h.client.SendWithOptions(frame, options, h.cadence.Policy)
+	}
+	if options.Priority == refreshpolicy.Urgent || options.Mode == refreshpolicy.Partial {
+		return screenclient.ErrUnsupportedRefresh
+	}
+	return h.client.Send(frame)
+}
+
 // ResetSession requires the caller to have invalidated its pixel baseline and
 // resolved any retained cycle first. It cannot itself resend or confirm content.
 func (h *Hub) ResetSession() {
 	h.disconnect()
 	h.client = newClient()
 	h.floor = time.Time{}
-	h.cadence.Urgent = time.Time{}
+	h.cadence.Reset()
 }
 
 func (h *Hub) cooldown() {

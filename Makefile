@@ -3,9 +3,9 @@ SHELL := /bin/bash
 BUILD_DIR ?= $(CURDIR)/build
 QUALITY_BASE_REF ?= HEAD
 
-.PHONY: quality format lint workflows audit test coverage native native-build latency c-size interop tinygo firmware build tools
+.PHONY: quality format lint workflows audit test coverage native native-build latency c-size interop tinygo firmware firmware-partial build tools
 .NOTPARALLEL:
-quality: format lint workflows audit test coverage native c-size interop tinygo firmware build
+quality: format lint workflows audit test coverage native c-size interop tinygo firmware firmware-partial build
 
 tools:
 	go -C tools mod verify
@@ -25,7 +25,8 @@ lint: tools
 
 workflows:
 	go -C tools build -trimpath -o bin/actionlint github.com/rhysd/actionlint/cmd/actionlint
-	tools/bin/actionlint .github/workflows/quality.yml .github/workflows/publish.yml
+	tools/bin/actionlint .github/workflows/*.yml
+	bash scripts/package-firmware-test.sh
 
 audit:
 	go -C tools build -trimpath -o bin/govulncheck golang.org/x/vuln/cmd/govulncheck
@@ -66,7 +67,7 @@ c-size: native
 	clang-tidy-19 -p "$(BUILD_DIR)/native" firmware/esp32/core/*.c firmware/esp32/tests/*.c firmware/esp32/platform/net_io.c firmware/esp32/platform/display_guard.c firmware/esp32/platform/uart.c
 
 interop: native
-	cd firmware/esp32/tests/interop && EP_CRYPTO_CLI="$(BUILD_DIR)/native/crypto_cli" EP_WIRE_CLI="$(BUILD_DIR)/native/wire_cli" EP_RECEIVER_CLI="$(BUILD_DIR)/native/receiver_cli" go test -timeout 30s ./...
+	cd firmware/esp32/tests/interop && EP_CRYPTO_CLI="$(BUILD_DIR)/native/crypto_cli" EP_WIRE_CLI="$(BUILD_DIR)/native/wire_cli" EP_RECEIVER_CLI="$(BUILD_DIR)/native/receiver_cli" EP_REGION_CLI="$(BUILD_DIR)/native/region_cli" go test -timeout 30s ./...
 
 tinygo:
 	mkdir -p "$(BUILD_DIR)"
@@ -74,6 +75,10 @@ tinygo:
 
 firmware:
 	. "$$IDF_PATH/export.sh" && cd firmware/esp32 && idf.py -B build-release -DSDKCONFIG=build-release/sdkconfig build
+
+# Separate candidate configuration/artifacts; never overwrite the recovery build.
+firmware-partial:
+	. "$$IDF_PATH/export.sh" && cd firmware/esp32 && idf.py -B build-partial -DSDKCONFIG=build-partial/sdkconfig '-DSDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.partial.defaults' build
 
 build:
 	mkdir -p "$(BUILD_DIR)"

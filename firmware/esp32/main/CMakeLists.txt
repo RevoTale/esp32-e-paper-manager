@@ -2,6 +2,8 @@ idf_component_register(SRCS "main.c" "runtime.c" "../core/bytes.c" "../core/epoc
     "../core/config.c" "../core/provision.c" "../core/wire.c"
     "../core/secure.c" "../core/secure_record.c" "../core/screen.c"
     "../core/screen_frame.c" "../core/screen_reply.c" "../platform/storage.c" "../platform/uart.c"
+    "../core/screen_region.c" "../core/region.c"
+    "../core/panel75_region.c" "../core/panel75_window.c"
     "../core/panel75.c" "../core/panel75_io.c" "../platform/display.c"
     "../core/panel75_trace.c" "../core/owner.c" "../core/screen_timing.c"
     "../platform/channel.c" "../platform/usb_receiver.c" "../platform/display_guard.c"

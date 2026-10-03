@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/RevoTale/esp32-e-paper-manager/display"
+	"github.com/RevoTale/esp32-e-paper-manager/refreshpolicy"
 	"github.com/RevoTale/esp32-e-paper-manager/refreshstamp"
 	"github.com/RevoTale/esp32-e-paper-manager/renderbatch"
 	"github.com/RevoTale/esp32-e-paper-manager/renderdiag"
@@ -18,6 +19,7 @@ const DefaultMaintenanceInterval = 600 * time.Second
 // ScreenOptions enables full-cycle stamps and maintenance. Now supplies trusted
 // wall time only; scheduling uses elapsed monotonic time, never calendar time.
 type ScreenOptions struct {
+	Partial             *ScreenPartialOptions // Nil preserves full-only behavior; copied at construction.
 	Zone                *time.Location
 	MaintenanceInterval time.Duration // Zero selects 600 seconds; negative rejects.
 	Now                 Clock         // Nil selects time.Now; the caller establishes clock trust.
@@ -36,6 +38,9 @@ type reservedScreenRenderer interface {
 }
 
 type screenCycles struct {
+	partialOptions          *ScreenPartialOptions
+	partial                 bool
+	partials                uint16
 	tracker                 *refreshstamp.Tracker
 	renderer                reservedScreenRenderer
 	area                    image.Rectangle
@@ -73,6 +78,9 @@ func NewScreenWithOptions(renderer ScreenRenderer, size display.Size, policy ren
 		options.Now = time.Now
 	}
 	s.cycles = &screenCycles{tracker: tracker, renderer: reserved, area: area, now: options.Now, interval: options.MaintenanceInterval}
+	if err := s.configurePartial(options.Partial); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
@@ -81,6 +89,14 @@ func (s *Screen) prepareDelivery() (ScreenDelivery, error) {
 	if s.cycles == nil {
 		return d, nil
 	}
+	if s.cycles.partialOptions != nil && d.Options.Mode != refreshpolicy.Full {
+		return s.prepareRegionDelivery(d)
+	}
+	return s.prepareFullDelivery(d)
+}
+
+func (s *Screen) prepareFullDelivery(d ScreenDelivery) (ScreenDelivery, error) {
+	d.Options.Mode = refreshpolicy.Full
 	c := s.cycles
 	if c.next == math.MaxUint64 {
 		return s.rejectRender(d.Revision, refreshstamp.ErrCycle)
@@ -115,6 +131,9 @@ func (s *Screen) ResolveCycle(id refreshstamp.CycleID, confirmed bool) error {
 		return ErrConflict
 	}
 	c := s.cycles
+	if c.partial {
+		return s.resolvePartial(confirmed)
+	}
 	var err error
 	var completed time.Duration
 	if confirmed {
@@ -127,10 +146,19 @@ func (s *Screen) ResolveCycle(id refreshstamp.CycleID, confirmed bool) error {
 	proof := c.tracker.Confirmed()
 	s.state.FullRefresh = &ScreenRefresh{Cycle: proof.Cycle, Started: proof.Started, Completed: proof.Completed}
 	s.state.RefreshTrusted, c.completed = true, completed
+	c.partials = 0
 	return s.resolvePixels(true)
 }
 
 func (s *Screen) completeCycle(id refreshstamp.CycleID) (time.Duration, error) {
+	completed, err := s.cycleElapsed()
+	if err != nil {
+		return 0, err
+	}
+	return completed, s.cycles.tracker.Complete(id, s.cycles.now())
+}
+
+func (s *Screen) cycleElapsed() (time.Duration, error) {
 	completed := s.elapsed()
 	if _, _, err := s.queue.Wait(completed); err != nil {
 		return 0, err
@@ -138,7 +166,7 @@ func (s *Screen) completeCycle(id refreshstamp.CycleID) (time.Duration, error) {
 	if completed < s.cycles.started {
 		return 0, renderbatch.ErrClock
 	}
-	return completed, s.cycles.tracker.Complete(id, s.cycles.now())
+	return completed, nil
 }
 
 func (s *Screen) invalidateStamp() {

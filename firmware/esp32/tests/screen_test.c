@@ -15,6 +15,16 @@ static uint8_t send(ep_screen *screen, ep_record record, uint64_t now) {
     assert(ep_wire_decode(reply, n, &decoded)); assert(decoded.kind == 9);
     return decoded.payload[1];
 }
+static void reject_unavailable_region(ep_screen *screen, uint64_t now) {
+    uint8_t payload[148] = {0};
+    uint8_t state = screen->state;
+    uint64_t consumed = screen->consumed, transaction = screen->transaction;
+    unsigned before[] = {begins, writes, commits, aborts};
+    ep_record request = {.kind=14, .epoch=1, .id=1, .size=148, .payload=payload};
+    assert(send(screen, request, now) == 12);
+    assert(begins == before[0] && writes == before[1] && commits == before[2] && aborts == before[3]);
+    assert(screen->consumed == consumed && screen->transaction == transaction && screen->state == state);
+}
 int main(void) {
     ep_screen screen;
     ep_sink sink = {NULL, begin, write_pixels, commit, abort_pixels};
@@ -29,9 +39,11 @@ int main(void) {
     assert(send(&screen, (ep_record){.kind=2, .payload=claim, .size=32}, 0) == 0);
     assert(screen.generation == 1); // lost acquire ACK does not increment twice
     assert(send(&screen, (ep_record){.kind=3, .epoch=1, .payload=claim, .size=32}, 0) == 0);
+    reject_unavailable_region(&screen, 0);
     ep_record tx = {.kind=4, .epoch=1, .id=1, .size=32, .payload=digest};
     assert(send(&screen, tx, 0) == 6 && begins == 0); // conservative reboot floor
     assert(send(&screen, tx, 180000) == 0 && begins == 1);
+    reject_unavailable_region(&screen, 180000);
     for (uint8_t pass = 0; pass < 2; pass++) {
         for (uint32_t offset = 0; offset < 48000; offset += 1000) {
             ep_record data = {.kind=5, .epoch=1, .id=1, .pass=pass, .offset=offset, .size=1000, .payload=pixels+offset};
@@ -39,6 +51,7 @@ int main(void) {
         }
     }
     assert(screen.state == 2 && writes == 96 && commits == 0);
+    reject_unavailable_region(&screen, 180001);
     tx.kind = 6;
     assert(send(&screen, tx, 180002) == 0 && commits == 1 && screen.current_image);
     assert(send(&screen, tx, 180003) == 0 && commits == 1);

@@ -34,6 +34,12 @@ func TestUsageFailuresAndProxyMainExit(t *testing.T) {
 	if code := mainExit(); code != 0 {
 		t.Fatal(code)
 	}
+	proxy = func(string, io.Reader, io.Writer) error {
+		return screenusbhost.SerialProxy("esp32:/nonexistent/epaper-diagnostic", bytes.NewReader(nil), io.Discard)
+	}
+	if code := mainExit(); code != 20 {
+		t.Fatalf("proxy diagnostic exit=%d", code)
+	}
 	os.Args = []string{"epaperscreen", "--status"}
 	if code := mainExit(); code != 1 {
 		t.Fatal(code)

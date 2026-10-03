@@ -13,6 +13,7 @@ import (
 )
 
 type screenConfig struct {
+	partial             partialConfig
 	refreshPolicy       bool
 	urgent              time.Duration
 	usbWorker, serial   string
@@ -26,6 +27,7 @@ type screenConfig struct {
 }
 
 func screenFlags(f *flag.FlagSet, c *screenConfig) {
+	partialFlags(f, &c.partial)
 	f.BoolVar(&c.enabled, "screen", false, "use the native Go HTML/inline-CSS screen renderer")
 	f.StringVar(&c.transport, "screen-transport", "usb", "screen delivery: usb or wifi (EPN2)")
 	f.StringVar(&c.timezone, "timezone", "Europe/Kiev", "USB corner time zone; Wi-Fi uses the USB-provisioned enrollment zone")
@@ -69,7 +71,7 @@ func validateMode(flags *flag.FlagSet, c config) (config, error) {
 }
 
 func validateLegacy(c config) (config, error) {
-	if c.screen.usbWorker != "" || c.screen.serial != "" || c.screen.trusted || c.screen.policy != (renderbatch.Policy{}) {
+	if c.screen.partial.enabled || c.screen.usbWorker != "" || c.screen.serial != "" || c.screen.trusted || c.screen.policy != (renderbatch.Policy{}) {
 		return config{}, errors.New("screen options require screen mode; no fallback to legacy delivery")
 	}
 	if c.enrollmentFile == "" || c.stateFile == "" {
@@ -79,6 +81,9 @@ func validateLegacy(c config) (config, error) {
 }
 
 func validateScreen(c screenConfig) error {
+	if err := validatePartial(c); err != nil {
+		return err
+	}
 	if c.size.Width <= 0 || c.size.Height <= 0 || c.size.Width > 2048 || c.size.Height > 2048 || c.size.Width*c.size.Height > 1_048_576 {
 		return errors.New("screen dimensions exceed the bounded display profile")
 	}

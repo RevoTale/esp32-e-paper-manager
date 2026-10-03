@@ -1,10 +1,12 @@
 # ESP32 receiver — 7.5-inch V2
 
 Status: extracted integrated firmware. The source prototype's **first USB and
-encrypted Wi-Fi frames were visually confirmed on 2026-09-20**. This checkout's
-new build and container deployment have not received physical acceptance.
-Historical evidence does not certify a new artifact. Pico/Pi5 paths in the
-original repository remain unchanged.
+encrypted Wi-Fi frames were visually confirmed on 2026-09-20**.
+Historical evidence does not certify a new artifact. On2026-09-30, the standalone
+candidate received user-confirmed USB and encrypted Wi-Fi frames from native
+macOS tools; see [exact evidence and remaining gates](../../docs/hardware-acceptance-20260930.md).
+Packaged-manager and full production acceptance remain incomplete. Pico/Pi5 paths
+in the original repository remain unchanged.
 
 ## Target and architecture
 

@@ -34,6 +34,11 @@ func (h *Hub) Serve(ctx context.Context, listener net.Listener) error {
 		}
 		if err = h.reserve(socket); err != nil {
 			if errors.Is(err, net.ErrClosed) {
+				// Cancellation can close the hub after Accept, before admission.
+				// Preserve the same cause as cancellation while Accept is blocked.
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				return err
 			}
 			continue

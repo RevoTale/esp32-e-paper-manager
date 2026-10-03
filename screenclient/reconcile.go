@@ -41,12 +41,22 @@ func (c *Client) Reconcile() (Reconciliation, error) {
 			return Reconciliation{}, err
 		}
 	}
-	c.pending = streamsession.Transaction{}
+	c.resolve(result.Confirmed)
 	return result, nil
+}
+
+func (c *Client) resolve(confirmed bool) {
+	c.baseline = [32]byte{}
+	if confirmed {
+		c.baseline = c.pending.Digest
+	}
+	c.pending = streamsession.Transaction{}
+	c.pendingBytes = 0
 }
 
 func (c *Client) boundStatus(s screenwire.Status) error {
 	if s.Boot != c.lease.Boot || s.Generation != c.lease.Generation {
+		c.baseline = [32]byte{}
 		return ErrResync
 	}
 	if !c.validProgress(s) {
@@ -56,7 +66,11 @@ func (c *Client) boundStatus(s screenwire.Status) error {
 }
 
 func (c *Client) validProgress(s screenwire.Status) bool {
-	if s.Pass > c.caps.Passes || s.Offset >= uint32(c.caps.Stride)*uint32(c.caps.Height) {
+	limit := uint32(c.caps.Stride) * uint32(c.caps.Height)
+	if c.Pending() {
+		limit = c.pendingBytes
+	}
+	if s.Pass > c.caps.Passes || s.Offset >= limit {
 		return false
 	}
 	if s.State == streamrx.Ready || s.State == streamrx.Complete {

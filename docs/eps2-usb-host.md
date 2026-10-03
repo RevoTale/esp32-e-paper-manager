@@ -90,6 +90,23 @@ An absent port retries connection at one-second intervals, without uploads.
 
 ## Bounded serial process
 
+The paired `epaperscreen` worker and parent preserve a bounded diagnostic on
+pipe EOF without forwarding stderr or raw packets. Worker exit20 means port
+open,21 setup,22 serial write,23 serial read,24 reply validation. Other nonzero
+exits produce an unknown-worker diagnostic; old exit1 workers remain usable.
+These are local process categories, never controller completion evidence.
+
+The parent waits at most one second after EOF for exit-status publication.
+Successful reads do not incur this wait. EOF remains in the error chain, so
+existing retry/reconciliation rules remain unchanged; no frame replay or reset
+is introduced. A manager readiness retry may still recover without surfacing
+the transient category in its HTTP status. Use the bounded `--status` command
+for a single diagnostic attempt; it does not acquire a frame lease or refresh.
+This improves diagnosis but does not establish the cause of post-flasher EOF.
+
+References: [Cmd.Wait](https://pkg.go.dev/os/exec#Cmd.Wait),
+[ProcessState.ExitCode](https://pkg.go.dev/os#ProcessState.ExitCode).
+
 The parent owns the retained client and one long-lived child invocation:
 `epaperscreen --serial-proxy SERIAL_PORT`. This internal mode must be supervised;
 do not use it as a standalone serial sender. It opens one CDC port, asserts DTR,

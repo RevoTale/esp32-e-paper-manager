@@ -44,7 +44,7 @@ func TestMaintenanceDoesNotInheritUrgentPriority(t *testing.T) {
 	_, s := newScreenAPI(t)
 	s.options.Priority = refreshpolicy.Urgent
 	s.cycles = &screenCycles{resync: true}
-	if s.pendingUrgent() {
+	if s.pendingOptions().Priority == refreshpolicy.Urgent {
 		t.Fatal("recovery inherited urgency")
 	}
 }

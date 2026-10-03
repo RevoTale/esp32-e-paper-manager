@@ -4,6 +4,12 @@ Scope: Linux `epaper-manager`, CGO disabled, Go 1.26.8, current `go.mod` on
 2026-09-21. This is a source inventory, not legal clearance for distribution.
 The repository MIT license covers our code, not every dependency or font.
 
+Maintainer decision, 2026-10-03: keep the pinned scanx dependency and proceed
+without further upstream license investigation. The scanx finding below is
+informational, not a PR or publication blocker. Do not open an upstream issue
+or replace the dependency for this finding. This decision does not establish
+new license terms or change the remaining notice/source packaging work.
+
 ## Evidence
 
 In the matching Dev Container, enumerate compiled packages rather than the
@@ -25,7 +31,7 @@ inventory, not proof that the linker retains every function or asset.
 | Dependency | Version | Evidence and unresolved work |
 | --- | --- | --- |
 | `github.com/benoitkugler/textprocessing` | `v0.0.6` | Root LICENSE contains LGPL-2.1. `engine → canvas/text → textprocessing/fribidi` is an actual package import. Review the applicable package terms and static-binary distribution requirements; do not relabel it MIT. |
-| `github.com/srwiley/scanx` | `e94503791388` | No root LICENSE in the downloaded module. `scan.go` declares FreeType License OR GPL-2.0-or-later and refers to a missing LICENSE file; `span.go` has no initial license header. Resolve complete attribution and applicable terms for this pinned revision before approving distribution. |
+| `github.com/srwiley/scanx` | `e94503791388` | Informational; maintainer accepted proceeding without further investigation. No root LICENSE in the downloaded module. `scan.go` declares FreeType License OR GPL-2.0-or-later and refers to a missing LICENSE file; `span.go` has no initial license header. |
 | `github.com/BurntSushi/freetype-go` | `b763ddbfe298` | Root LICENSE offers FreeType License or GPL. Record the selected permitted route and preserve its complete notices. |
 | `github.com/golang/freetype` | `e2365dfdc4a0` | Root LICENSE likewise offers FreeType License or GPL. Treat separately from the fork above. |
 | `github.com/go-fonts/latin-modern` | `v0.3.3` | Both LICENSE and LICENSE-GUST exist; embedded fonts need their own notice treatment, not only the Go wrapper license. |
@@ -49,12 +55,11 @@ do not satisfy these current artifacts' inventory.
 
 Before publication:
 
-1. Resolve the pinned scanx attribution gap from authoritative upstream sources.
-2. Review the applicable LGPL/dual-license distribution path without assuming
+1. Review the applicable LGPL/dual-license distribution path without assuming
    that publishing our source alone satisfies every condition.
-3. Collect exact notices and required source/build materials for the released
+2. Collect exact notices and required source/build materials for the released
    artifacts, preserving dependency versions and integrity evidence.
-4. Include the notice bundle in both runtime architectures and inspect it in
+3. Include the notice bundle in both runtime architectures and inspect it in
    the built images. Repeat the inventory when dependencies change.
 
 Do not remove a dependency, change renderer behavior, select a new project
@@ -79,3 +84,18 @@ The scanx issue inventory contained one open issue, unrelated to licensing:
 is not proof that our renderer reaches the reported condition; do not claim it
 as a reproduced product defect. No upstream issue/comment was created, no
 license text was invented, and no dependency was replaced during this audit.
+
+## Recheck — 2026-10-03
+
+Re-enumerated both Linux architectures from the current candidate: the same
+27 module/version pairs; `go mod verify` passed. Local inventories are ignored
+`build/runtime-modules-amd64.txt` and `build/runtime-modules-arm64.txt`.
+GitHub retrieval of the pinned scanx `scan.go` confirmed its FreeType-or-GPL
+header; the module still contains no LICENSE file and `span.go` starts directly
+with its package declaration. This does not establish permission for all
+adaptations by that project's authors. No replacement license was fabricated.
+
+The subsequent maintainer decision above removes the scanx clarification
+requirement. Remaining work is the notice/source/rebuild bundle for the selected
+distribution terms, including LGPL and ESP-IDF components. No upstream contact,
+dependency replacement or change to GitHub publication settings was made.

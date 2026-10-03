@@ -12,7 +12,6 @@ import (
 	"github.com/RevoTale/esp32-e-paper-manager/refreshpolicy"
 	"github.com/RevoTale/esp32-e-paper-manager/screenclient"
 	"github.com/RevoTale/esp32-e-paper-manager/screendelivery"
-	"github.com/RevoTale/esp32-e-paper-manager/screenwire"
 )
 
 func (s *Sender) WaitReady(ctx context.Context) (screendelivery.Readiness, error) {
@@ -67,7 +66,7 @@ func (s *Sender) connect(p worker) (screendelivery.Readiness, error) {
 		return screendelivery.Readiness{}, ErrConfiguration
 	}
 	s.caps = caps
-	if s.cadence.Enabled() && caps.Features&screenwire.FeatureRefreshPolicy == 0 {
+	if !s.cadence.Supports(caps) {
 		return screendelivery.Readiness{}, screenclient.ErrUnsupportedRefresh
 	}
 	if s.floor.IsZero() {
@@ -84,8 +83,9 @@ func (s *Sender) connect(p worker) (screendelivery.Readiness, error) {
 			r.Pending = screendelivery.PendingConfirmed
 		}
 		s.cooldown()
-		r.NotBefore = s.floor
-		r.UrgentNotBefore = s.floor
+		outcome := r.Pending
+		r = s.cadence.Ready(s.floor)
+		r.Pending = outcome
 	}
 	s.bound = true
 	return r, nil
@@ -96,6 +96,10 @@ func (s *Sender) Send(ctx context.Context, frame display.Frame) error {
 }
 
 func (s *Sender) SendWithOptions(ctx context.Context, frame display.Frame, options refreshpolicy.Options) error {
+	return s.send(ctx, options, func() error { return s.sendFrame(frame, options) })
+}
+
+func (s *Sender) send(ctx context.Context, options refreshpolicy.Options, transmit func() error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -109,7 +113,7 @@ func (s *Sender) SendWithOptions(ctx context.Context, frame display.Frame, optio
 	if err != nil {
 		return err
 	}
-	err = operation(ctx, p, func() error { return s.sendFrame(frame, options) })
+	err = operation(ctx, p, transmit)
 	if err == nil {
 		if s.cadence.Enabled() {
 			s.floor = s.cadence.Complete(s.now())
@@ -150,7 +154,7 @@ func (s *Sender) ResetSession() {
 	_ = s.disconnect()
 	s.client = newClient()
 	s.floor = time.Time{}
-	s.cadence.Urgent = time.Time{}
+	s.cadence.Reset()
 }
 
 func (s *Sender) cooldown() {

@@ -18,7 +18,7 @@ The latter enables the serial bridge; it is not a master power switch.
 Keep this tested assembly unchanged. Conflicting revision-specific A/B tables
 must not be generalized to another board; see the debugging history.
 This accepts one frame, not repeat updates, streaming, Wi-Fi or measured energy.
-Full receiver work follows [the plan](../remote-epaper/tasks/esp32-75.md).
+Full receiver work followed [the archived plan](https://github.com/RevoTale/esp32-e-paper-manager/blob/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/remote-epaper/tasks/esp32-75.md).
 
 ## Build
 

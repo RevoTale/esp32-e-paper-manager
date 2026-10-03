@@ -98,7 +98,7 @@ func TestInvalidCapabilitiesReject(t *testing.T) {
 		func(c *Capabilities) { c.Width = 0 }, func(c *Capabilities) { c.Height = 0 },
 		func(c *Capabilities) { c.Stride = 2 }, func(c *Capabilities) { c.MaxChunk = 0 }, func(c *Capabilities) { c.MaxChunk = 1025 },
 		func(c *Capabilities) { c.Passes = 0 }, func(c *Capabilities) { c.Passes = 3 },
-		func(c *Capabilities) { c.Format = 2 }, func(c *Capabilities) { c.Features = 0 }, func(c *Capabilities) { c.Features |= 16 },
+		func(c *Capabilities) { c.Format = 2 }, func(c *Capabilities) { c.Features = 0 }, func(c *Capabilities) { c.Features |= 32 },
 		func(c *Capabilities) { c.Profile = 0 }, func(c *Capabilities) { c.ProfileVersion = 0 }, func(c *Capabilities) { c.MinimumFullMS = 0 },
 	} {
 		c := capsFixture()

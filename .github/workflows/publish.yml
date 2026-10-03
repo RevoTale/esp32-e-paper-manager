@@ -1,4 +1,4 @@
-name: Publish manager
+name: Publish release
 on:
   push:
     tags: ['v*']
@@ -10,9 +10,38 @@ concurrency:
 jobs:
   quality:
     uses: ./.github/workflows/quality.yml
+  firmware:
+    needs: quality
+    if: github.repository == 'RevoTale/esp32-e-paper-manager' && vars.RELEASE_PUBLICATION_APPROVED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: firmware-${{ github.sha }}
+          path: build/release
+      - name: Verify and attach firmware to the existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
+          git merge-base --is-ancestor HEAD origin/main
+          cd build/release
+          sha256sum --check SHA256SUMS
+          test "$(cat COMMIT)" = "$GITHUB_SHA"
+          gh release view "$RELEASE_TAG" > /dev/null
+          gh release upload "$RELEASE_TAG" epaper-esp32-7in5-v2.tar.gz SHA256SUMS COMMIT
   publish:
     needs: quality
-    if: github.repository == 'RevoTale/esp32-e-paper-manager'
+    if: github.repository == 'RevoTale/esp32-e-paper-manager' && vars.RELEASE_PUBLICATION_APPROVED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

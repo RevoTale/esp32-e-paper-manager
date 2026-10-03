@@ -12,9 +12,9 @@ typedef struct {
 } ep_panel_io;
 typedef struct {
     ep_panel_io io;
-    uint32_t offset;
+    uint32_t offset, plane_bytes;
     uint8_t command, pass;
-    bool active;
+    bool active, partial;
     uint64_t started_us;
     uint32_t cycle, elapsed_ms, samples[3], low_samples[3];
     uint8_t state, phase, step;
@@ -22,6 +22,9 @@ typedef struct {
     uint8_t error_code, busy_flags;
 } ep_panel75;
 ep_sink ep_panel75_create(ep_panel75 *, ep_panel_io);
+// Candidate adapter; board enablement is opt-in until physical qualification.
+ep_region_sink ep_panel75_regions(void);
+int ep_panel75_start(ep_panel75 *);
 int ep_panel_command(ep_panel75 *, uint8_t, const uint8_t *, size_t);
 int ep_panel_data(ep_panel75 *, const uint8_t *, size_t);
 int ep_panel_ready(ep_panel75 *, uint32_t budget_us);

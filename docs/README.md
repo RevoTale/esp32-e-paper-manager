@@ -22,6 +22,14 @@ current independent build/test commands. Link/path normalization is ongoing.
 
 ## Decisions and history
 
+Obsolete implementation task lists are retained in Git at checkpoint
+`1b60448ddf2fd594bf3e05d3ceafc593f28412c3`, not maintained in this tree:
+[Pico/ESP32 migration plans](https://github.com/RevoTale/esp32-e-paper-manager/tree/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/remote-epaper/tasks)
+and [Pi5 plans](https://github.com/RevoTale/esp32-e-paper-manager/tree/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/docs/pi5-service/tasks).
+Historical references to those task paths describe that checkpoint. Keep
+specifications, ADRs, license evidence and hardware failure records: they
+explain current safety and protocol constraints, rather than pending work.
+
 - [Architecture decisions](../decisions/)
 - [Hardware debugging history](history/docs/epaper-debugging-history.md)
 - [Original requirements and specifications](history/remote-epaper/)

@@ -32,16 +32,18 @@ type acquisition struct {
 	claim [16]byte
 }
 type Client struct {
-	random    io.Reader
-	stream    io.ReadWriter
-	buffer    [screenwire.MaxRecord]byte
-	lease     streamsession.Lease
-	acquiring acquisition
-	caps      screenwire.Capabilities
-	maxChunk  uint16
-	pending   streamsession.Transaction
-	next      uint64
-	bound     bool
+	random       io.Reader
+	stream       io.ReadWriter
+	buffer       [screenwire.MaxRecord]byte
+	lease        streamsession.Lease
+	acquiring    acquisition
+	caps         screenwire.Capabilities
+	maxChunk     uint16
+	pending      streamsession.Transaction
+	baseline     [32]byte
+	pendingBytes uint32
+	next         uint64
+	bound        bool
 }
 
 // New requires cryptographic randomness in production (normally crypto/rand.Reader).
@@ -52,7 +54,7 @@ func New(random io.Reader) (*Client, error) {
 // NewWithMaxChunk additionally bounds decoded data bytes per request, independently
 // of the negotiated device capabilities. The limit is fixed across reconnects.
 // Account for screenwire.HeaderSize in the transport RX budget. Packed encoding
-// never enlarges a request; control requests require 64 bytes including headers.
+// never enlarges a request; region control requires 180 bytes including headers.
 func NewWithMaxChunk(random io.Reader, maxChunk uint16) (*Client, error) {
 	if random == nil || maxChunk == 0 || maxChunk > screenwire.MaxPayload {
 		return nil, screenwire.ErrRecord

@@ -16,6 +16,7 @@ func TestCRecordCodecMatchesGo(t *testing.T) {
 		{Kind: screenwire.Acquire, Payload: make([]byte, 32)},
 		{Kind: screenwire.Bind, Epoch: 0xffff, Payload: make([]byte, 32)},
 		{Kind: screenwire.Begin, Epoch: 37, ID: 12, Payload: make([]byte, 32)},
+		{Kind: screenwire.BeginRegion, Epoch: 37, ID: 12, Payload: make([]byte, screenwire.RegionBeginSize)},
 		{Kind: screenwire.Commit, Epoch: 37, ID: 12, Payload: make([]byte, 32)},
 		{Kind: screenwire.Query, Epoch: 37, ID: 12, Payload: make([]byte, 32)},
 		{Kind: screenwire.Abort, Epoch: 37},

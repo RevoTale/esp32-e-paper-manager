@@ -28,14 +28,14 @@ func SerialProxy(name string, input io.Reader, output io.Writer) (result error) 
 	}
 	p, err := openPort(name)
 	if err != nil {
-		return ErrWorker
+		return proxyFailure{20, ErrWorker}
 	}
 	defer func() { result = errors.Join(result, p.Close()) }()
 	if err = p.SetReadTimeout(180 * time.Second); err != nil {
-		return ErrWorker
+		return proxyFailure{21, ErrWorker}
 	}
 	if err = p.SetDTR(true); err != nil {
-		return ErrWorker
+		return proxyFailure{21, ErrWorker}
 	}
 	defer func() { result = errors.Join(result, p.SetDTR(false)) }()
 	return serveProxy(input, output, p)
@@ -66,20 +66,23 @@ func proxyExchange(p io.ReadWriter, output io.Writer, data []byte, n int) error 
 		return screenwire.ErrRecord
 	}
 	if err = writeAll(p, data[:n]); err != nil {
-		return err
+		return proxyFailure{22, err}
 	}
 	// Preserve the original payload length for request-shape validation.
 	// ParseReply uses header fields and length, never the aliased payload bytes.
 	n, err = readRecord(p, data)
 	if err != nil {
-		return err
+		if errors.Is(err, screenwire.ErrRecord) {
+			return proxyFailure{24, err}
+		}
+		return proxyFailure{23, err}
 	}
 	reply, err := screenwire.Decode(data[:n])
 	if err != nil {
-		return err
+		return proxyFailure{24, err}
 	}
 	if _, err = screenwire.ParseReply(reply, request); err != nil {
-		return err
+		return proxyFailure{24, err}
 	}
 	return writeAll(output, data[:n])
 }

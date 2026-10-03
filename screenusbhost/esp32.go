@@ -25,11 +25,11 @@ func esp32Proxy(name string, input io.Reader, output io.Writer) (result error) {
 	}
 	p, err := openESP32Port(name)
 	if err != nil {
-		return ErrWorker
+		return proxyFailure{20, ErrWorker}
 	}
 	defer func() { result = errors.Join(result, p.Close()) }()
 	if err := p.SetReadTimeout(180 * time.Second); err != nil {
-		return ErrWorker
+		return proxyFailure{21, ErrWorker}
 	}
 	// No deliberate DTR/RTS toggles. Unix drivers may still pulse lines on open;
 	// cold setup and abort-failure recovery require physical power removal.

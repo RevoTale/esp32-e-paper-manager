@@ -10,7 +10,7 @@ complete ESP32 receiver after confirming its diagnostic rectangle. The small
 1.54-inch tricolor profile below remains a preserved, unaccepted alternative.
 Do not carry its two-color format or timing into the active target.
 
-Follow [the ESP32 receiver plan](../remote-epaper/tasks/esp32-75.md).
+Historical work followed [the ESP32 receiver plan](https://github.com/RevoTale/esp32-e-paper-manager/blob/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/remote-epaper/tasks/esp32-75.md).
 Reuse the native Go manager, EPS2, authenticated EPN2 sessions and exact accepted
 7.5 panel sequence. New board adapters must not weaken Pico's security policy.
 

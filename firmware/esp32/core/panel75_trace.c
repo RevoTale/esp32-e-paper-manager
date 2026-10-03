@@ -22,9 +22,10 @@ void ep_panel_diagnostic(const ep_panel75 *p, uint8_t out[11]) {
 }
 void ep_panel_trace_command(ep_panel75 *p, uint8_t command) {
     if (p->failed) return; // Preserve the first failure, not cleanup's last step.
-    const uint8_t commands[] = {1, 6, 4, 0, 0x61, 0x15, 0x50, 0x60, 0x10, 0x13, 0x12, 2, 7};
-    const uint8_t phases[] = {1, 1, 2, 1, 1, 1, 1, 1, 3, 4, 5, 6, 6};
-    const uint8_t steps[] = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17};
+    const uint8_t commands[] = {1, 6, 4, 0, 0x61, 0x15, 0x50, 0x60, 0x10, 0x13, 0x12, 2, 7,
+        0xe0, 0xe5, 0x91, 0x90};
+    const uint8_t phases[] = {1, 1, 2, 1, 1, 1, 1, 1, 3, 4, 5, 6, 6, 1, 1, 1, 1};
+    const uint8_t steps[] = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21};
     bool power_off = command == 0x50 && p->phase >= 3;
     for (size_t i = 0; i < sizeof commands; i++) {
         if (command == commands[i]) { p->phase = phases[i]; p->step = steps[i]; break; }

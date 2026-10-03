@@ -39,6 +39,7 @@ var shapes = [...]shape{
 	Health:       {zeroValue, zeroValue, 0},
 	PanelTrace:   {zeroValue, zeroValue, 0},
 	BeginRefresh: {nonzeroValue, nonzeroValue, 44},
+	BeginRegion:  {nonzeroValue, nonzeroValue, RegionBeginSize},
 }
 
 func (r Record) validCoordinates() bool {
@@ -64,7 +65,7 @@ func (r Record) validLength(want, n int) bool {
 // Request kinds are explicit: Reply sits between old requests and Health.
 func (k Kind) request() bool {
 	switch k {
-	case Hello, Acquire, Bind, Begin, Data, Commit, Query, Abort, Health, DataPacked, PanelTrace, BeginRefresh:
+	case Hello, Acquire, Bind, Begin, Data, Commit, Query, Abort, Health, DataPacked, PanelTrace, BeginRefresh, BeginRegion:
 		return true
 	default:
 		return false

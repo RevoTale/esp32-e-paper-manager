@@ -24,14 +24,14 @@ func startNativePeer(t *testing.T) *nativePeer {
 	return startNativePeerNamed(t, "EP_CRYPTO_CLI")
 }
 
-func startNativePeerNamed(t *testing.T, variable string) *nativePeer {
+func startNativePeerNamed(t *testing.T, variable string, args ...string) *nativePeer {
 	t.Helper()
 	path := os.Getenv(variable)
 	if path == "" {
 		t.Fatal(variable + " must name the compiled native peer")
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	peer := &nativePeer{t: t, cmd: exec.CommandContext(ctx, path), cancel: cancel}
+	peer := &nativePeer{t: t, cmd: exec.CommandContext(ctx, path, args...), cancel: cancel}
 	peer.cmd.WaitDelay = time.Second
 	peer.cmd.Stderr = os.Stderr
 	// Register before pipe creation or handshake assertions can fail.

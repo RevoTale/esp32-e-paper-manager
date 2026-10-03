@@ -26,7 +26,7 @@ func runScreen(c config, token []byte) error {
 	}
 	defer func() { _ = transport.close() }()
 	screen, err := manager.NewScreenWithOptions(renderer, c.screen.size, c.screen.policy,
-		manager.ScreenOptions{Zone: zone, MaintenanceInterval: c.screen.maintenance})
+		manager.ScreenOptions{Zone: zone, MaintenanceInterval: c.screen.maintenance, Partial: c.screen.partial.options()})
 	if err != nil {
 		return err
 	}
@@ -46,6 +46,11 @@ func runScreen(c config, token []byte) error {
 		return err
 	}
 	server := httpServer(c.httpsAddress, api)
+	if c.screen.partial.enabled {
+		if err := pump.ConfigurePartial(c.screen.partial.policy); err != nil {
+			return err
+		}
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	return serveScreen(ctx, server, func() error { return serveTLS(server, c.certificate, c.certificateKey) }, pump.Run, transport.run)

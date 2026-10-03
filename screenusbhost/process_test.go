@@ -12,6 +12,10 @@ import (
 
 func TestMain(m *testing.M) {
 	if len(os.Args) == 3 && os.Args[1] == "--serial-proxy" {
+		if os.Args[2] == "diagnostic" {
+			_, _ = os.Stderr.WriteString("private-secret")
+			os.Exit(23)
+		}
 		if os.Args[2] == "blocked" {
 			time.Sleep(time.Hour)
 		}

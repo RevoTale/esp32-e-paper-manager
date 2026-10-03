@@ -15,6 +15,7 @@ static uint8_t begin(ep_screen *s, const ep_record *r, uint64_t now) {
         interval = (uint32_t)ep_le(r->payload + (r->payload[32] ? 40 : 36), 4);
     }
     if (now - s->last_refresh < interval) return 6;
+    s->region_mode = false;
     s->consumed = s->transaction = r->id; memcpy(s->digest, r->payload, 32);
     s->state = 1; s->pass = s->failure = 0; s->offset = 0; s->current_image = false;
     s->started = s->progress = now;
@@ -26,11 +27,12 @@ static uint8_t begin(ep_screen *s, const ep_record *r, uint64_t now) {
 static uint8_t data(ep_screen *s, const ep_record *r, uint64_t now) {
     if (r->id != s->transaction) return 7;
     if (s->state != 1) return s->state == 2 ? ep_screen_fail(s, 7) : 7;
-    uint32_t stride = ((uint32_t)s->config.width + 7) / 8;
-    uint32_t frame_bytes = stride * s->config.height;
+    uint32_t width = s->region_mode ? (uint32_t)(s->region.right - s->region.left) : s->config.width;
+    uint32_t stride = (width + 7) / 8;
+    uint32_t frame_bytes = s->region_mode ? s->region.bytes : stride * s->config.height;
     if (r->kind != 5 || r->pass != s->pass || r->offset != s->offset || !r->size ||
         r->size > s->config.max_chunk || r->size > frame_bytes - s->offset) return ep_screen_fail(s, 8);
-    uint8_t padding = (uint8_t)(s->config.width % 8 ? (1u << (8 - s->config.width % 8)) - 1 : 0);
+    uint8_t padding = (uint8_t)(width % 8 ? (1u << (8 - width % 8)) - 1 : 0);
     for (uint32_t i = 0; padding && i < r->size; i++)
         if ((r->offset + i + 1) % stride == 0 && (r->payload[i] & padding)) return ep_screen_fail(s, 8);
     if (s->sink.write(s->sink.context, r->pass, r->offset, r->payload, r->size) ||
@@ -41,7 +43,9 @@ static uint8_t data(ep_screen *s, const ep_record *r, uint64_t now) {
     if (s->offset == frame_bytes) {
         uint8_t digest[32];
         if (mbedtls_sha256_finish(&s->hash, digest)) return ep_screen_fail(s, 11);
-        if (memcmp(digest, s->digest, 32)) return ep_screen_fail(s, 9);
+        const uint8_t *expected = s->region_mode ?
+            (s->pass ? s->region.new_digest : s->region.old_digest) : s->digest;
+        if (memcmp(digest, expected, 32)) return ep_screen_fail(s, 9);
         s->pass++; s->offset = 0;
         if (s->pass == s->config.passes) s->state = 2;
         else if (mbedtls_sha256_starts(&s->hash, 0)) return ep_screen_fail(s, 11);
@@ -49,6 +53,7 @@ static uint8_t data(ep_screen *s, const ep_record *r, uint64_t now) {
     return 0;
 }
 uint8_t ep_screen_frame(ep_screen *s, const ep_record *r, uint64_t now) {
+    if (r->kind == 14) return ep_screen_begin_region(s, r, now);
     if (r->kind == 8) {
         if (s->state == 1 || s->state == 2) { ep_screen_fail(s, 0); s->state = 5; }
         return s->fatal ? 11 : 0;

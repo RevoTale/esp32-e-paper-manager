@@ -75,7 +75,8 @@ func TestHealthReplyRequiresExactOperationAndBody(t *testing.T) {
 }
 
 func TestHealthDoesNotMakeReplyAValidStatusOperation(t *testing.T) {
-	for _, operation := range []Kind{0, Reply, 14, 255} {
+	// Operation 14 is now BeginRegion; 15 remains unassigned.
+	for _, operation := range []Kind{0, Reply, 15, 255} {
 		if err := EncodeStatus(make([]byte, StatusSize), Status{Operation: operation, Boot: [16]byte{1}}); !errors.Is(err, ErrRecord) {
 			t.Fatal(operation, err)
 		}

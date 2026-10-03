@@ -95,11 +95,23 @@ func (t *Tracker) Complete(id CycleID, completed time.Time) error {
 }
 
 // Abort covers failed or unknown results. No retry and no confirmed time advance.
+// DiscardUnsent is deliberately separate: it requires proof of no device I/O.
 func (t *Tracker) Abort(id CycleID) error {
 	if id == 0 || id != t.pending.Cycle {
 		return ErrCycle
 	}
 	t.Invalidate()
+	return nil
+}
+
+// DiscardUnsent releases preparation only. The caller must prove that no
+// transport operation began; a failed/unknown send MUST use Abort/Invalidate.
+// The old confirmed label survives, but the discarded ID cannot be reused.
+func (t *Tracker) DiscardUnsent(id CycleID) error {
+	if id == 0 || id != t.pending.Cycle {
+		return ErrCycle
+	}
+	t.pending, t.candidate = Confirmation{}, Label{}
 	return nil
 }
 

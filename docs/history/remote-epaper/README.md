@@ -9,7 +9,7 @@ WPA3-зв’язок і передає їх у RAM контролера без �
 USB має пріоритет. Rust/Blitz більше не є активними залежностями.
 
 Починай з [інструкції для нового candidate](../../native-candidate.md),
-[профілю HTML/CSS](SPEC-engine.md) та [плану міграції](tasks/pure-go-engine.md).
+[профілю HTML/CSS](SPEC-engine.md) та [архівного плану міграції](https://github.com/RevoTale/esp32-e-paper-manager/blob/1b60448ddf2fd594bf3e05d3ceafc593f28412c3/docs/history/remote-epaper/tasks/pure-go-engine.md).
 Готовий пакет і точні результати: [приймання candidate](../../native-candidate-acceptance.md).
 Нову прошивку ще потрібно фізично прийняти; успіх старих тестів не є доказом
 її роботи на екрані. Старі артефакти збережено для повернення до перевіреного стану.

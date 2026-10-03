@@ -6,6 +6,7 @@ const Mono1 uint8 = 1
 const RawFull uint16 = 3                   // bit 0 raw mono1 encoding; bit 1 full refresh
 const FeaturePackBits uint16 = 1 << 2      // Optional bounded PackBits DataPacked.
 const FeatureRefreshPolicy uint16 = 1 << 3 // BeginRefresh with explicit cadence.
+const FeatureRegion uint16 = 1 << 4        // BeginRegion with old/new pixel passes.
 
 // Capabilities are physical adapter properties, not remotely editable settings.
 // New dimensions are valid only with a matching local panel implementation.
@@ -32,7 +33,8 @@ func (c Capabilities) validProfile() bool {
 }
 
 func (c Capabilities) validFeatures() bool {
-	return c.Features&RawFull == RawFull && c.Features&^(RawFull|FeaturePackBits|FeatureRefreshPolicy) == 0
+	return c.Features&RawFull == RawFull && c.Features&^(RawFull|FeaturePackBits|FeatureRefreshPolicy|FeatureRegion) == 0 &&
+		(c.Features&FeatureRegion == 0 || c.Passes == 2)
 }
 
 func EncodeCapabilities(dst []byte, c Capabilities) error {

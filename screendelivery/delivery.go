@@ -24,6 +24,21 @@ type PolicySender interface {
 	SendWithOptions(context.Context, display.Frame, refreshpolicy.Options) error
 }
 
+// RegionSender consumes immutable prepared crops under the same confirmed
+// baseline as its last successful Send. It never silently performs a full update.
+type RegionSender interface {
+	Sender
+	SendRegion(context.Context, RegionPlan, refreshpolicy.Options) error
+}
+
+// RegionPolicySender negotiates both full and partial operator policies before
+// delivery starts. ConfigureRefresh must precede ConfigurePartial.
+type RegionPolicySender interface {
+	PolicySender
+	RegionSender
+	ConfigurePartial(refreshpolicy.Policy) error
+}
+
 // Outcome resolves only a previously ambiguous Send in the same caller.
 type Outcome uint8
 
@@ -35,9 +50,11 @@ const (
 
 // Readiness carries a conservative physical refresh deadline.
 type Readiness struct {
-	Pending         Outcome
-	NotBefore       time.Time
-	UrgentNotBefore time.Time // Zero means no distinct urgent permission.
+	Pending                Outcome
+	NotBefore              time.Time
+	UrgentNotBefore        time.Time // Zero means no distinct urgent permission.
+	PartialNotBefore       time.Time // Zero means no distinct partial permission.
+	PartialUrgentNotBefore time.Time
 }
 
 // RecoveringSender is serialized by one pump. Changed is a coalesced wake-up,

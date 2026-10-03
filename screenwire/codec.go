@@ -33,6 +33,7 @@ const (
 	DataPacked   // Negotiated PackBits; coordinates and progress are decoded bytes.
 	PanelTrace   // Cached physical-cycle observation; no ownership or pixel proof.
 	BeginRefresh // Negotiated per-transaction operator cadence, never a BUSY override.
+	BeginRegion  // Old/new region contract; dispatch requires a capable physical adapter.
 )
 
 var ErrRecord = errors.New("screen wire: invalid EPS2 record")

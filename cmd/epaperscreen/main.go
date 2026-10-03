@@ -39,6 +39,9 @@ func mainExit() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	if err := run(ctx, os.Args[1:], os.Stdout); err != nil {
+		if len(os.Args) > 1 && os.Args[1] == "--serial-proxy" {
+			return screenusbhost.ProxyExitCode(err)
+		}
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}

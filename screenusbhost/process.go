@@ -15,6 +15,7 @@ type process struct {
 	done          chan struct{}
 	cancel        context.CancelFunc
 	once          sync.Once
+	exitCode      int // Published by closing done; read only after receiving done.
 }
 
 // Parent-owned os.Pipes avoid Cmd.Wait closing StdoutPipe while the delivery
@@ -50,6 +51,7 @@ func (p *process) reap(cmd *exec.Cmd, changed chan<- struct{}) {
 	// Exit errors never contain trusted delivery evidence. Pipe EOF triggers
 	// reconciliation; do not print child diagnostics or private record bytes.
 	_ = cmd.Wait()
+	p.exitCode = cmd.ProcessState.ExitCode()
 	close(p.done)
 	select {
 	case changed <- struct{}{}:
@@ -57,7 +59,24 @@ func (p *process) reap(cmd *exec.Cmd, changed chan<- struct{}) {
 	}
 }
 
-func (p *process) Read(data []byte) (int, error)  { return p.output.Read(data) }
+func (p *process) Read(data []byte) (int, error) {
+	n, err := p.output.Read(data)
+	if !errors.Is(err, io.EOF) {
+		return n, err
+	}
+	// EOF may precede Wait's publication. Bound collection if a broken worker
+	// closes stdout without exiting; the outer operation still owns cancellation.
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+	select {
+	case <-p.done:
+		if p.exitCode != 0 {
+			err = errors.Join(err, errors.New(proxyStage(p.exitCode)))
+		}
+	case <-timer.C:
+	}
+	return n, err
+}
 func (p *process) Write(data []byte) (int, error) { return p.input.Write(data) }
 func (p *process) Done() <-chan struct{}          { return p.done }
 

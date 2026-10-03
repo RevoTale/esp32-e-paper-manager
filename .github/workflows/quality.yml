@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: quality-${{ github.ref }}
+  group: quality-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   validate:
@@ -33,3 +33,14 @@ jobs:
             -v "$PWD:/workspaces/project" -w /workspaces/project epaper-dev make quality
       - name: Build runtime image
         run: docker build --build-arg TARGETARCH=amd64 --build-arg VCS_REF="$GITHUB_SHA" -t epaper-runtime .
+      - name: Package the full and partial capable firmware
+        run: |
+          docker run --rm -e RELEASE_COMMIT="$GITHUB_SHA" \
+            -v "$PWD:/workspaces/project" -w /workspaces/project epaper-dev \
+            bash scripts/package-firmware.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: firmware-${{ github.sha }}
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 14

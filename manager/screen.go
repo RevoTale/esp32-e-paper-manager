@@ -14,6 +14,7 @@ import (
 	"github.com/RevoTale/esp32-e-paper-manager/refreshstamp"
 	"github.com/RevoTale/esp32-e-paper-manager/renderbatch"
 	"github.com/RevoTale/esp32-e-paper-manager/renderdiag"
+	"github.com/RevoTale/esp32-e-paper-manager/screendelivery"
 )
 
 var ErrSuperseded = errors.New("manager: render superseded by newer scene")
@@ -29,6 +30,7 @@ type detailedScreenRenderer interface {
 }
 
 type ScreenDelivery struct {
+	Region   *screendelivery.RegionPlan
 	Options  refreshpolicy.Options
 	Revision renderbatch.Revision
 	Cycle    refreshstamp.CycleID
@@ -36,15 +38,16 @@ type ScreenDelivery struct {
 }
 
 type ScreenStatus struct {
-	Current        renderbatch.Revision `json:"current"`
-	InFlight       renderbatch.Revision `json:"in_flight"`
-	Confirmed      renderbatch.Revision `json:"confirmed"`
-	Delivered      renderbatch.Revision `json:"delivered"`
-	Failure        *ScreenFailure       `json:"failure,omitempty"`
-	Warnings       []renderdiag.Warning `json:"warnings,omitempty"`
-	InFlightCycle  refreshstamp.CycleID `json:"in_flight_cycle,omitempty"`
-	FullRefresh    *ScreenRefresh       `json:"full_refresh,omitempty"`
-	RefreshTrusted bool                 `json:"refresh_trusted"`
+	Current        renderbatch.Revision  `json:"current"`
+	InFlight       renderbatch.Revision  `json:"in_flight"`
+	Confirmed      renderbatch.Revision  `json:"confirmed"`
+	Delivered      renderbatch.Revision  `json:"delivered"`
+	Failure        *ScreenFailure        `json:"failure,omitempty"`
+	RefreshFailure *ScreenRefreshFailure `json:"refresh_failure,omitempty"`
+	Warnings       []renderdiag.Warning  `json:"warnings,omitempty"`
+	InFlightCycle  refreshstamp.CycleID  `json:"in_flight_cycle,omitempty"`
+	FullRefresh    *ScreenRefresh        `json:"full_refresh,omitempty"`
+	RefreshTrusted bool                  `json:"refresh_trusted"`
 }
 
 type ScreenFailure struct {
@@ -59,6 +62,7 @@ type ScreenFailure struct {
 type Screen struct {
 	options, flightOptions refreshpolicy.Options
 	refreshEnabled         bool // Fixed by pump construction before serving requests.
+	partialEnabled         bool // Set only after transport policy configuration succeeds.
 	mu                     sync.Mutex
 	pumping                atomic.Bool
 	started                time.Time
@@ -117,6 +121,7 @@ func (s *Screen) submitOptionsAt(base renderbatch.Revision, markup []byte, now f
 	s.markup, s.state.Current = string(markup), next
 	s.options = options
 	s.state.Failure = nil
+	s.state.RefreshFailure = nil
 	s.state.Warnings = nil
 	s.clearRejected()
 	s.notify()
@@ -182,7 +187,7 @@ func (s *Screen) finishRender(rev renderbatch.Revision, frame display.Frame, war
 	}
 	s.prepared = true
 	s.state.Warnings = append([]renderdiag.Warning(nil), warnings...)
-	if s.samePixels(frame) && !s.refreshLease() {
+	if s.samePixels(frame) && !s.refreshLease() && s.flightOptions.Mode != refreshpolicy.Full {
 		s.state.Confirmed = rev
 		return ScreenDelivery{}, s.release()
 	}
@@ -239,6 +244,10 @@ func (s *Screen) Status() ScreenStatus {
 		failure := *status.Failure
 		status.Failure = &failure
 	}
+	if status.RefreshFailure != nil {
+		failure := *status.RefreshFailure
+		status.RefreshFailure = &failure
+	}
 	if status.FullRefresh != nil {
 		refresh := *status.FullRefresh
 		status.FullRefresh = &refresh
@@ -253,6 +262,7 @@ func (s *Screen) release() error {
 	}
 	if s.cycles != nil {
 		s.cycles.forced, s.cycles.refresh = false, false
+		s.cycles.partial = false
 	}
 	s.state.InFlightCycle = 0
 	s.state.InFlight, s.prepared = 0, false

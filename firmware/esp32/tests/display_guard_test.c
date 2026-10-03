@@ -27,7 +27,7 @@ static ep_sink fresh(void) {
     assert(!ep_display_recovery_required());
     reason = ESP_RST_SW;
     begin_result = commit_result = abort_result = 0; begins = commits = aborts = 0;
-    return ep_display_guard((ep_sink){NULL, begin, write_pixels, commit, abort_frame});
+    return ep_display_guard((ep_sink){&reason, begin, write_pixels, commit, abort_frame});
 }
 static void successful_lifecycle(void) {
     ep_sink sink = fresh(); uint8_t byte = 0;
@@ -58,7 +58,34 @@ static void failure_retention(void) {
     assert(sink.abort(sink.context) == 0 && !ep_display_recovery_required());
     assert(commits == 1 && aborts == 1);
 }
+static bool valid_region(void *context, const ep_region *r) {
+    assert(context == &reason);
+    assert(!ep_display_recovery_required());
+    return r && r->bytes == 4;
+}
+static int begin_region(void *context, const ep_region *r) {
+    assert(context == &reason);
+    assert(r && r->bytes == 4);
+    return begin(context);
+}
+static void region_lifecycle(void) {
+    ep_sink sink = fresh();
+    assert(!ep_display_guard_regions((ep_region_sink){0}).begin);
+    ep_region_sink regions = ep_display_guard_regions((ep_region_sink){valid_region, begin_region});
+    ep_region r = {.bytes = 4};
+    assert(regions.valid(sink.context, &r));
+    assert(!ep_display_recovery_required());
+    assert(!regions.begin(sink.context, &r) && ep_display_recovery_required());
+    assert(!sink.commit(sink.context) && !ep_display_recovery_required());
+    begin_result = -1;
+    assert(regions.begin(sink.context, &r) != 0 && ep_display_recovery_required());
+    abort_result = -1;
+    assert(sink.abort(sink.context) != 0 && ep_display_recovery_required());
+    abort_result = 0;
+    assert(!sink.abort(sink.context) && !ep_display_recovery_required());
+}
 int main(void) {
     successful_lifecycle(); failure_retention();
+    region_lifecycle();
     puts("display guard: set-before-begin, retain-on-error and clear-after-success passed (host logic only)");
 }

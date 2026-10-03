@@ -24,6 +24,10 @@ func (c *Client) finish(frame display.Frame) error {
 			return err
 		}
 	}
+	return c.finishTransaction()
+}
+
+func (c *Client) finishTransaction() error {
 	r, err := c.transaction(screenwire.Commit)
 	if err != nil {
 		return err
@@ -31,7 +35,7 @@ func (c *Client) finish(frame display.Frame) error {
 	if !c.complete(r) {
 		return screenwire.ErrRecord
 	}
-	c.pending = streamsession.Transaction{}
+	c.resolve(true)
 	return nil
 }
 
@@ -47,6 +51,8 @@ func (c *Client) prepare(frame display.Frame) error {
 	}
 	c.next++
 	c.pending = streamsession.Transaction{Lease: c.lease, ID: c.next, Digest: sha256.Sum256(frame.Bytes())}
+	c.baseline = [32]byte{}
+	c.pendingBytes = uint32(len(frame.Bytes()))
 	return nil
 }
 

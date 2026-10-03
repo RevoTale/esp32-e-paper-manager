@@ -6,7 +6,7 @@
 #include <string.h>
 
 static uint8_t flash_bytes[16384], command;
-static bool dc;
+static bool dc, region_mode, partial;
 static uint64_t now = 180000000;
 static unsigned refreshes, plane_bytes[2];
 static int read_flash(void *c, size_t at, void *out, size_t n) {
@@ -21,28 +21,44 @@ static int erase_flash(void *c, size_t at, size_t n) {
     (void)c; assert(at <= sizeof flash_bytes && n <= sizeof flash_bytes - at);
     memset(flash_bytes + at, 255, n); return 0;
 }
-static int pin(void *c, ep_panel_pin p, bool high) { (void)c; if (p == EP_DC) dc = high; return 0; }
+static int pin(void *c, ep_panel_pin p, bool high) {
+    (void)c;
+    if (p == EP_DC) dc = high;
+    if (p == EP_RESET && !high) partial = false;
+    return 0;
+}
 static int ready(void *c) { (void)c; return 1; }
 static uint64_t clock_us(void *c) { (void)c; return now; }
 static void delay(void *c, uint32_t us) { (void)c; now += us; }
 static int spi(void *c, const uint8_t *data, size_t n) {
     (void)c; assert(n && n <= 64);
     if (!dc) { assert(n == 1); command = data[0]; if (command == 0x12) refreshes++; }
+    else if (command == 0x50 && data[0] == 0xa9) partial = true;
+    else if (command == 0x90) {
+        const uint8_t window[9] = {0,240,0,255,0,254,0,255,1};
+        assert(region_mode && partial && n == sizeof window && !memcmp(data, window, n));
+    }
     else if (command == 0x10 || command == 0x13) {
         unsigned pass = command == 0x10 ? 0 : 1;
         uint8_t expected = refreshes ? 0x5a : 0xa5;
         if (!pass) expected = (uint8_t)~expected;
+        if (partial) expected = pass ? 0xa5 : 0x5a;
         for (size_t i = 0; i < n; i++) assert(data[i] == expected);
         plane_bytes[pass] += (unsigned)n;
     }
     return 0;
 }
-int main(void) {
+int main(int argc, char **argv) {
+    bool fast = argc == 2 && !strcmp(argv[1], "--region-fast");
+    if (argc > 2 || (argc == 2 && strcmp(argv[1], "--region") && !fast)) return 1;
+    region_mode = argc == 2;
     memset(flash_bytes, 255, sizeof flash_bytes);
     ep_flash flash = {NULL, read_flash, write_flash, erase_flash};
     ep_panel75 panel; ep_panel_io io = {NULL, spi, pin, ready, clock_us, delay};
     ep_screen screen; uint8_t boot[16] = {1}, id[16] = {2};
-    assert(ep_screen_init(&screen, (ep_screen_config){800,480,1000,1,2,1,180000}, ep_panel75_create(&panel, io), boot, id));
+    // Test-only host scheduling budget: physical time is already a virtual seam.
+    assert(ep_screen_init(&screen, (ep_screen_config){800,480,1000,1,2,1,fast ? 1u : 180000u}, ep_panel75_create(&panel, io), boot, id));
+    if (region_mode) assert(ep_screen_regions(&screen, ep_panel75_regions()));
     uint8_t request[EP_RECORD], reply[EP_RECORD];
     for (;;) {
         size_t prefix = fread(request, 1, 4, stdin), size = 0;
@@ -67,6 +83,7 @@ int main(void) {
         if (fwrite(reply, 1, size, stdout) != size || fflush(stdout)) return 8;
     }
     ep_screen_disconnect(&screen); mbedtls_sha256_free(&screen.hash);
-    if (refreshes) assert(refreshes == 2 && plane_bytes[0] == 96000 && plane_bytes[1] == 96000);
+    unsigned expected_bytes = region_mode ? 48004 : 96000;
+    if (refreshes) assert(refreshes == 2 && plane_bytes[0] == expected_bytes && plane_bytes[1] == expected_bytes);
     return 0;
 }

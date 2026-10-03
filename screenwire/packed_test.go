@@ -45,7 +45,7 @@ func TestOnlyKnownFeaturesAreOptionalInCapabilities(t *testing.T) {
 			t.Fatal(got, err)
 		}
 	}
-	for _, flags := range []uint16{0, 1, 2, FeaturePackBits, FeatureRefreshPolicy, RawFull | 16, 0xffff} {
+	for _, flags := range []uint16{0, 1, 2, FeaturePackBits, FeatureRefreshPolicy, FeatureRegion, RawFull | 32, 0xffff} {
 		c.Features = flags
 		if err := EncodeCapabilities(make([]byte, CapabilitiesSize), c); err == nil {
 			t.Fatal(flags)

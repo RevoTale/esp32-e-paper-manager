@@ -79,7 +79,9 @@ PUT may later fail rendering; inspect status rather than treating 202 as success
 Optional mutation headers: `X-Update-Priority: normal|urgent` and
 `X-Refresh-Mode: auto|partial|full`. Defaults are normal/auto. Duplicate or empty
 option headers reject. Partial is a request, not a capability guarantee; the
-current ESP32 7.5-inch profile does not advertise partial refresh.
+accepted full-only firmware does not advertise partial refresh. The separate
+candidate and `-experimental-partial` manager option enable negotiation, not
+automatic physical qualification.
 
 With negotiated `-refresh-policy`, normal/urgent defaults are 180s/30s. Urgent
 cannot interrupt BUSY or bypass panel safety. Maintenance full refresh defaults
@@ -94,6 +96,21 @@ overrides device timing. See [refresh policy](refresh-priority.md).
 - `refresh_trusted`, `full_refresh`, `in_flight_cycle`: physical-refresh evidence
   and its validity; not proof of what a human sees.
 - `failure` and `warnings`: bounded diagnostics when present.
+- `refresh_failure`: optional `{revision, reason}` for a requested partial mode
+  rejected before device I/O. Reasons are `full-refresh-required` (no trusted
+  base or consecutive-partial limit) and `region-budget` (damage exceeds local
+  region limits). This is not invalid HTML and does not stop the manager or
+  silently send the rejected target as full. The next accepted submission clears
+  it; maintenance may still refresh the older confirmed image. Without explicit
+  partial configuration the endpoint returns501 before accepting the mutation.
+
+Candidate-only options require `-screen -refresh-policy -experimental-partial`
+and an800×480 viewport. `-partial-interval` and `-partial-urgent-interval` default
+to1s, `-partial-max-updates` to5, and `-partial-max-bytes` to12000 per old/new
+plane. These are configurable operator budgets, not manufacturer safety limits
+or qualified performance. The byte limit bounds one final damage rectangle;
+unrelated edits are composed before damage detection. Auto may choose full;
+explicit partial rejects if its budget or confirmed baseline is unavailable.
 
 Zero revisions with `refresh_trusted:false` are normal before a first delivery.
 For unknown outcomes, follow [delivery recovery](screen-delivery-recovery.md),
