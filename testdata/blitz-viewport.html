@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: white; }
+    body { color: black; font-family: Go; font-size: 24px; line-height: 32px; }
+    h1 { position: absolute; left: 16px; top: 16px; margin: 0; font-size: 36px; line-height: 44px; }
+    .note { position: absolute; left: 16px; top: 72px; margin: 0; }
+    .card { position: absolute; top: 144px; width: 232px; height: 128px;
+            box-sizing: border-box; border: 2px solid black; padding: 14px; }
+    .left { left: 16px; text-align: left; }
+    .center { left: 284px; text-align: center; }
+    .right { right: 16px; text-align: right; }
+    .bar { display: inline-block; vertical-align: top; width: 40px; height: 8px; background: black; }
+    .percent { position: absolute; left: 2%; top: 66%; width: 96%; height: 20%;
+               box-sizing: border-box; border: 2px solid black; padding: 12px; overflow: hidden; }
+    .corner { position: absolute; right: 16px; bottom: 12px; font-size: 18px; line-height: 24px; }
+  </style>
+</head>
+<body>
+  <h1>Viewport і розміщення</h1>
+  <p class="note">800 × 480 · текст, відступи, рамки</p>
+  <div class="card left">Ліворуч<br><span class="bar"></span></div>
+  <div class="card center">По центру<br><span class="bar"></span></div>
+  <div class="card right">Праворуч<br><span class="bar"></span></div>
+  <div class="percent">Ширина 96% · padding 12px<br>Український текст: Ґ, Є, І, Ї.</div>
+  <div class="corner">ЛОКАЛЬНИЙ PREVIEW · без USB</div>
+</body>
+</html>

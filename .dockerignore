@@ -1,0 +1,16 @@
+# Allow only build inputs; never send enrollment, TLS keys or local captures.
+**
+!go.mod
+!go.sum
+!*/
+!**/*.go
+**/*_test.go
+firmware/
+tools/
+docs/
+decisions/
+testdata/
+build/
+dist/
+.git
+.local*/

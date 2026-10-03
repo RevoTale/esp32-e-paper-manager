@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { width: 100%; height: 100%; }
+    body { margin: 0; background: white; color: black; font-family: Go; }
+    h1 { position: absolute; top: 20px; left: 16px; margin: 0; font-size: 32px; }
+    .card { position: absolute; width: 248px; height: 144px; border: 1px solid black; box-sizing: border-box; padding: 12px; }
+    .title { font-size: 16px; margin-bottom: 12px; }
+    .text { width: 222px; height: 84px; font-size: 24px; line-height: 28px; overflow: hidden; }
+    .footer { position: absolute; left: 16px; bottom: 40px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>Текст і межі · Go + Blitz</h1>
+  <div class="card" style="left:16px;top:84px">
+    <div class="title">NORMAL · перенесення</div>
+    <div class="text">Завдання працює. Оновлення готове до передачі.</div>
+  </div>
+  <div class="card" style="left:276px;top:84px">
+    <div class="title">NOWRAP + CLIP</div>
+    <div class="text" style="white-space:nowrap">Дуже довгий рядок з деталями</div>
+  </div>
+  <div class="card" style="left:536px;top:84px">
+    <div class="title">ELLIPSIS · перевірка</div>
+    <div class="text" style="white-space:nowrap;text-overflow:ellipsis">Дуже довгий рядок з деталями</div>
+  </div>
+  <div class="card" style="left:16px;top:244px">
+    <div class="title">PRE-WRAP · рядки</div>
+    <div class="text" style="white-space:pre-wrap">Статус:   готово
+Черга:    3
+Помилки:  0</div>
+  </div>
+  <div class="card" style="left:276px;top:244px">
+    <div class="title">OVERFLOW-WRAP</div>
+    <div class="text" style="overflow-wrap:anywhere">ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789</div>
+  </div>
+  <div class="card" style="left:536px;top:244px;background:black;color:white">
+    <div class="title">GO FONT · українська</div>
+    <div class="text" style="text-align:center">Ґанок · Єдність<br>Їжак · Ідея<br>06.09.2026</div>
+  </div>
+  <div class="footer">Локальна перевірка. Без передачі на Pico.</div>
+</body>
+</html>

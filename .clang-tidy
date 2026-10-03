@@ -1,0 +1,4 @@
+Checks: '-*,readability-function-size'
+WarningsAsErrors: 'readability-function-size'
+CheckOptions:
+  readability-function-size.LineThreshold: 60

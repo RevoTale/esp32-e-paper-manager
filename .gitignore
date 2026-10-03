@@ -1,0 +1,16 @@
+/.local*/
+/build/
+/dist/
+/tools/bin/
+**/build/
+**/build-*/
+**/sdkconfig.old
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.uf2
+*.elf
+*.bin
+*.out

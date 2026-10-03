@@ -1,0 +1,9 @@
+menu "E-paper receiver"
+config EP_EXPERIMENTAL_PARTIAL
+    bool "Enable experimental 7.5 V2 region refresh"
+    default n
+    help
+        Candidate only. Requires physical qualification of wake, old/new
+        controller RAM, ghosting and refresh timing on the exact panel.
+        The accepted full-only receiver remains the default recovery build.
+endmenu
