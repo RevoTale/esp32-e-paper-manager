@@ -53,7 +53,7 @@ notices, embedded font/data notices and the ESP-IDF firmware dependency closure
 also require explicit coverage. Historical TinyGo notices under `docs/licenses`
 do not satisfy these current artifacts' inventory.
 
-Before publication:
+Attribution follow-up:
 
 1. Review the applicable LGPL/dual-license distribution path without assuming
    that publishing our source alone satisfies every condition.

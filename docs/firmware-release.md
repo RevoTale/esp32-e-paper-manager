@@ -24,7 +24,7 @@ uses the same application. Keep the consecutive-partial and periodic-full rules.
 The user accepted the working prototype on October1. The interrupted soak test
 is not continuous endurance acceptance; see `docs/partial-candidate-20261001.md`.
 Release automation does not establish panel lifetime, power or fault-recovery
-qualification. Releases remain marked prerelease pending those boundaries.
+qualification.
 
 Source and dependency license notices accompany the tagged repository/SDK;
 the bundled project MIT license does not replace upstream component licenses.

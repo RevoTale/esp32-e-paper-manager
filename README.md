@@ -10,8 +10,10 @@ Waveshare e-paper board over an authenticated, encrypted Wi-Fi link or USB.
 
 ## Getting started
 
-This repository is being extracted from the working prototype. Container
-publication and production acceptance are not complete yet.
+Pushes to main publish versioned firmware and manager images after CI passes.
+The [Go client library](docs/go-client.md) uses the same version tag.
+See [automatic releases](docs/releasing.md) and
+[firmware update instructions](docs/firmware-release.md).
 
 1. Open the repository in its Dev Container.
 2. Run `make quality` to test Go, native C, Go/C interoperability and TinyGo

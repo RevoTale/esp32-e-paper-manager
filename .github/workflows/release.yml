@@ -1,0 +1,63 @@
+name: Release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+jobs:
+  quality:
+    uses: ./.github/workflows/quality.yml
+  version:
+    needs: quality
+    if: github.repository == 'RevoTale/esp32-e-paper-manager' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned version tool
+        run: |
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/semantic-release" \
+            https://github.com/go-semantic-release/semantic-release/releases/download/v2.31.0/semantic-release_v2.31.0_linux_amd64
+          printf 'b8f518b1aeb1d1742f4e6e91a179b707cea4309a64fe3854f465bf724f04f6d3  %s\n' "$RUNNER_TEMP/semantic-release" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/semantic-release"
+      - uses: go-semantic-release/action@2e9dc4247a6004f8377781bef4cb9dad273a741f # v1
+        id: version
+        with:
+          github-token: ${{ github.token }}
+          bin: ${{ runner.temp }}/semantic-release
+          allow-initial-development-versions: true
+      - name: Resolve version and allow retry of this commit
+        id: tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git fetch origin --tags
+          if test -n "$VERSION"; then
+            tag="v$VERSION"
+          else
+            tag=$(git tag --points-at HEAD | LC_ALL=C sort | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}')
+          fi
+          if test -n "$tag"; then
+            test "$(git rev-parse "$tag^{commit}")" = "$GITHUB_SHA"
+          fi
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+  publish:
+    needs: [quality, version]
+    if: needs.version.outputs.tag != ''
+    uses: ./.github/workflows/publish.yml
+    with:
+      release_tag: ${{ needs.version.outputs.tag }}
+    permissions:
+      contents: write
+      packages: write

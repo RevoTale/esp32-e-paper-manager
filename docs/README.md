@@ -9,6 +9,7 @@ current independent build/test commands. Link/path normalization is ongoing.
 - [Container deployment](container-deployment.md)
 - [ESP32 receiver and provisioning](../firmware/esp32/README.md)
 - [Current screen API](screen-api.md)
+- [Versioned Go client library](go-client.md)
 - [Container acceptance evidence](container-acceptance.md)
 - [Release procedure and boundaries](releasing.md)
 - [Runtime dependency notice audit](runtime-dependency-notices.md)

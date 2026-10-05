@@ -1,18 +1,18 @@
 name: Publish release
 on:
-  push:
-    tags: ['v*']
+  workflow_call:
+    inputs:
+      release_tag:
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
-  group: publish-${{ github.ref }}
+  group: publish-${{ inputs.release_tag }}
   cancel-in-progress: false
 jobs:
-  quality:
-    uses: ./.github/workflows/quality.yml
   firmware:
-    needs: quality
-    if: github.repository == 'RevoTale/esp32-e-paper-manager' && vars.RELEASE_PUBLICATION_APPROVED == 'true'
+    if: github.repository == 'RevoTale/esp32-e-paper-manager'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -30,18 +30,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
           git merge-base --is-ancestor HEAD origin/main
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
           cd build/release
           sha256sum --check SHA256SUMS
           test "$(cat COMMIT)" = "$GITHUB_SHA"
           gh release view "$RELEASE_TAG" > /dev/null
           gh release upload "$RELEASE_TAG" epaper-esp32-7in5-v2.tar.gz SHA256SUMS COMMIT
   publish:
-    needs: quality
-    if: github.repository == 'RevoTale/esp32-e-paper-manager' && vars.RELEASE_PUBLICATION_APPROVED == 'true'
+    if: github.repository == 'RevoTale/esp32-e-paper-manager'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -54,10 +54,11 @@ jobs:
           persist-credentials: false
       - name: Require a versioned main-branch commit
         env:
-          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]
           git merge-base --is-ancestor HEAD origin/main
+          test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
       - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -76,7 +77,7 @@ jobs:
           sbom: true
           build-args: VCS_REF=${{ github.sha }}
           tags: |
-            ghcr.io/revotale/esp32-e-paper-manager:${{ github.ref_name }}
+            ghcr.io/revotale/esp32-e-paper-manager:${{ inputs.release_tag }}
             ghcr.io/revotale/esp32-e-paper-manager:sha-${{ github.sha }}
       - name: Record immutable deployment reference
         env:
