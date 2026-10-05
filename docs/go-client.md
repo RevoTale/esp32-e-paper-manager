@@ -30,7 +30,7 @@ client, err := screenclient.New(rand.Reader)
 if err != nil {
     return err
 }
-caps, err := client.Bind(stream)
+caps, err := client.Connect(stream)
 if err != nil {
     return err
 }
