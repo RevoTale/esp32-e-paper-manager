@@ -28,7 +28,7 @@ func bitmapURL(t *testing.T, pixels []color.NRGBA, width int) string {
 
 // Active replacements for all three ignored Blitz bugs. These retain the
 // original geometry, changing asset injection to canonical PNG. Native CPU
-// bilinear sampling/Bayer quantization has its own explicit pixel oracle.
+// bilinear sampling/threshold quantization has its own explicit pixel oracle.
 // Historical evidence: docs/blitz-image-layout-bugs.md, blitz-positioning-gap.md.
 func TestHistoricalImageIntrinsicCollapse(t *testing.T) {
 	black := color.NRGBA{A: 255}
@@ -43,11 +43,11 @@ func TestHistoricalImageContainClipping(t *testing.T) {
 	expectBox(t, s, "image", geometry.Rect{Width: 4, Height: 4})
 	img := rendered(t, 8, 8, source)
 	// The original worker oracle assumed a hard black/white sampling edge.
-	// Our specified bilinear edge has gray samples before the anchored dither;
+	// Our specified bilinear edge has gray samples before threshold conversion;
 	// neither interpolation nor clipping is allowed to shrink the 4x4 box.
 	pixel(t, img, 1, 1, color.RGBA{R: 255 / 4, G: 255 / 4, B: 255 / 4, A: 255})
 	pixel(t, img, 2, 1, color.RGBA{R: 191, G: 191, B: 191, A: 255})
-	assertMono(t, display.Size{Width: 8, Height: 8}, source, []byte{0, 0xe0, 0xc0, 0, 0, 0, 0, 0})
+	assertMono(t, display.Size{Width: 8, Height: 8}, source, []byte{0, 0xc0, 0xc0, 0, 0, 0, 0, 0})
 }
 
 func TestHistoricalStaticWrapperDoesNotCaptureAbsolute(t *testing.T) {

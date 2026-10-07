@@ -17,6 +17,7 @@ current independent build/test commands. Link/path normalization is ongoing.
 ## Reference
 
 - [HTML/CSS profile](manager-html-css-profile-v2.md)
+- [Monochrome conversion and grain debugging](monochrome-rendering.md)
 - [Refresh priority](refresh-priority.md)
 - [Hardware sources](history/docs/epaper-hardware-sources.md)
 - [Code reuse research](history/docs/epaper-code-reuse-research.md)

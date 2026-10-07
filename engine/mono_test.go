@@ -58,7 +58,7 @@ func TestMonoDitherIsDisplayAnchoredAndSourceImmutable(t *testing.T) {
 			img.SetRGBA(x, y, color.RGBA{R: 128, G: 128, B: 128, A: 255})
 		}
 	}
-	frame, err := packMono(context.Background(), img)
+	frame, err := (Result{Image: img}).FrameWithMode(context.Background(), OrderedDither)
 	if err != nil {
 		t.Fatal(err)
 	}
