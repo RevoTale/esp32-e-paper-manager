@@ -20,7 +20,8 @@ See [automatic releases](docs/releasing.md) and
    compatibility, then build the ESP32 firmware and Linux manager.
 3. Follow the [receiver guide](firmware/esp32/README.md) for hardware and USB
    provisioning. Do not overwrite an existing enrollment or flash partition.
-4. Follow [container deployment](docs/container-deployment.md) and the
+4. Follow [simple Docker setup](docs/simple-setup.md) (or the existing
+   [bind-mount deployment](docs/container-deployment.md)) and the
    [screen API guide](docs/screen-api.md) to submit a dashboard.
 
 The current HTML API is for trusted producers and is loopback-only. E-paper

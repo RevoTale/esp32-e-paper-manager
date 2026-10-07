@@ -41,6 +41,13 @@ func main() {
 }
 
 func run(arguments []string) error {
+	if len(arguments) > 0 && arguments[0] == "setup" {
+		return runSetup(arguments[1:])
+	}
+	return runManager(arguments)
+}
+
+func runManager(arguments []string) error {
 	configuration, err := parseConfig(arguments)
 	if err != nil {
 		return err
