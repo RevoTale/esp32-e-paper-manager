@@ -38,11 +38,34 @@ func (r Result) Frame(ctx context.Context) (display.Frame, error) {
 	return packMono(ctx, r.Image)
 }
 
+// MonochromeMode controls conversion after all color/alpha composition.
+type MonochromeMode uint8
+
+const (
+	// Threshold preserves solid text and UI fills without a halftone grid.
+	Threshold MonochromeMode = iota
+	// OrderedDither approximates gray tones with a display-anchored 4x4 pattern.
+	OrderedDither
+)
+
+// FrameWithMode lets image-oriented callers explicitly select halftoning.
+// Both modes are pixel-local: an edit cannot propagate error into other rows.
+func (r Result) FrameWithMode(ctx context.Context, mode MonochromeMode) (display.Frame, error) {
+	if mode != Threshold && mode != OrderedDither {
+		return display.Frame{}, display.ErrColor
+	}
+	return packMonoWithMode(ctx, r.Image, mode)
+}
+
 // Ordered dithering is anchored at logical display (0,0). Unlike error diffusion,
 // an edit cannot propagate quantization error across otherwise unchanged rows.
 var bayer4 = [4][4]uint32{{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}}
 
 func packMono(ctx context.Context, img *image.RGBA) (display.Frame, error) {
+	return packMonoWithMode(ctx, img, Threshold)
+}
+
+func packMonoWithMode(ctx context.Context, img *image.RGBA, mode MonochromeMode) (display.Frame, error) {
 	if img == nil {
 		return display.Frame{}, display.ErrFrameGeometry
 	}
@@ -63,7 +86,11 @@ func packMono(ctx context.Context, img *image.RGBA) (display.Frame, error) {
 				return display.Frame{}, display.ErrColor // Composition must finish first.
 			}
 			luma := (19595*uint32(c.R) + 38470*uint32(c.G) + 7471*uint32(c.B) + 32768) >> 16
-			if luma < bayer4[y&3][x&3]*16+8 {
+			limit := uint32(128)
+			if mode == OrderedDither {
+				limit = bayer4[y&3][x&3]*16 + 8
+			}
+			if luma < limit {
 				pixels[y*stride+x/8] |= 0x80 >> uint(x&7)
 			}
 		}
