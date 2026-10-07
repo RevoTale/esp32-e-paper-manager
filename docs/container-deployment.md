@@ -1,7 +1,7 @@
 # Container deployment
 
-Status: packaging candidate; image build/start and registry publication have
-not yet been accepted. Do not treat a proposed image tag as a published image.
+For automatic credential preparation, use [simple setup](simple-setup.md).
+This guide retains the existing operator-managed bind-mount deployment.
 
 The image runs the Go manager as UID/GID 65532. The ESP32 firmware remains on
 the board. Only encrypted device-link TCP 9757 is published, on an explicitly
@@ -22,7 +22,7 @@ Configure these Compose interpolation variables:
 - `EPAPER_DEVICE_BIND`: the server's LAN IP, reachable from the ESP32.
 - `EPAPER_SECRETS_DIR`: absolute path to the credential directory.
 
-Inspect configuration with `docker compose -f deploy/compose.yaml config`.
+Inspect configuration with `docker compose -f deploy/compose.yaml config --quiet`.
 Starting it is a separate operator action:
 `docker compose -f deploy/compose.yaml up -d`.
 

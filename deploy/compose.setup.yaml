@@ -1,0 +1,50 @@
+# Use an image built from the setup change; v0.1.1 does not contain setup.
+name: epaper
+services:
+  setup:
+    profiles: [setup]
+    image: ${EPAPER_IMAGE:?Set the published image version or digest containing setup}
+    user: "0:0"
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - credentials:/data
+      - type: bind
+        source: ${EPAPER_ENROLLMENT_FILE:?Set the USB enrollment file path}
+        target: /input/device.json
+        read_only: true
+        bind:
+          create_host_path: false
+    command: [setup, -enrollment, /input/device.json, -output, /data/credentials, -uid, "65532", -gid, "65532"]
+  epaper-manager:
+    image: ${EPAPER_IMAGE:?Set the published image version or digest containing setup}
+    user: "65532:65532"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    ports:
+      - "${EPAPER_DEVICE_BIND:?Set the server LAN IP}:9757:9757"
+    volumes:
+      - credentials:/data:ro
+    command:
+      - -screen
+      - -screen-transport=wifi
+      - -trusted-html
+      - -enrollment=/data/credentials/device.json
+      - -token-file=/data/credentials/api-token
+      - -tls-cert=/data/credentials/tls.crt
+      - -tls-key=/data/credentials/tls.key
+      - -https-listen=127.0.0.1:8443
+      - -device-listen=0.0.0.0:9757
+      - -refresh-policy
+      - -full-interval=180s
+      - -urgent-interval=30s
+volumes:
+  credentials:

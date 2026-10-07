@@ -6,6 +6,7 @@ current independent build/test commands. Link/path normalization is ongoing.
 
 ## Practical guides
 
+- [Simple Docker setup](simple-setup.md)
 - [Container deployment](container-deployment.md)
 - [ESP32 receiver and provisioning](../firmware/esp32/README.md)
 - [Current screen API](screen-api.md)
