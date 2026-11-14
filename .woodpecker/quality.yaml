@@ -1,5 +1,5 @@
 when:
-  - event: pull_request
+  - event: [pull_request, push, manual]
 
 clone:
   git:
@@ -30,7 +30,9 @@ steps:
       <<: *image-labels
       dockerfile: .woodpecker/quality.generated.Dockerfile
       build_args:
-        - QUALITY_BASE_REF=origin/${CI_COMMIT_TARGET_BRANCH}
+        - QUALITY_TARGET_BRANCH=${CI_COMMIT_TARGET_BRANCH}
+        - QUALITY_PREVIOUS_SHA=${CI_PREV_COMMIT_SHA}
+        - QUALITY_EVENT=${CI_PIPELINE_EVENT}
         - RELEASE_COMMIT=${CI_COMMIT_SHA}
       repo: epaper-firmware-check
       dry_run: true
@@ -45,4 +47,5 @@ steps:
       repo: epaper-runtime-check
       build_args:
         - VCS_REF=${CI_COMMIT_SHA}
+      platforms: linux/amd64,linux/arm64
       dry_run: true

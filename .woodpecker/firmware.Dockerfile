@@ -1,9 +1,11 @@
 WORKDIR /src
 COPY . .
-ARG QUALITY_BASE_REF
+ARG QUALITY_TARGET_BRANCH
+ARG QUALITY_PREVIOUS_SHA
+ARG QUALITY_EVENT
 ARG RELEASE_COMMIT
 RUN git config --global --add safe.directory /src \
-    && base="$QUALITY_BASE_REF" \
+    && case "$QUALITY_EVENT" in pull_request) base="origin/$QUALITY_TARGET_BRANCH";; *) base="$QUALITY_PREVIOUS_SHA";; esac \
     && if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then base=$(git rev-list --max-parents=0 HEAD | head -n1); fi \
     && QUALITY_BASE_REF="$base" make quality \
     && RELEASE_COMMIT="$RELEASE_COMMIT" bash scripts/package-firmware.sh \
