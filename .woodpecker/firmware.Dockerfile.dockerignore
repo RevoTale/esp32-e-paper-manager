@@ -3,5 +3,7 @@ dist/
 .local*/
 firmware/esp32/build*/
 
-.ci-toolchain/
 .ci-firmware/
+.git/config
+.git/hooks/
+.git/logs/

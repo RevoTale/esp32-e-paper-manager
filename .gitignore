@@ -15,5 +15,5 @@
 *.bin
 *.out
 
-.ci-toolchain/
 .ci-firmware/
+.woodpecker/quality.generated.Dockerfile*

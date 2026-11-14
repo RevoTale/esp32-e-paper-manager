@@ -17,22 +17,18 @@ variables:
     licenses: MIT
 
 steps:
-  - name: export-toolchain
-    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
-    settings:
-      <<: *image-labels
-      dockerfile: .devcontainer/Dockerfile
-      repo: epaper-dev
-      dry_run: true
-      output: type=oci,tar=false,dest=.ci-toolchain
+  - name: prepare-quality-dockerfile
+    image: ghcr.io/revotale/ci/base:v0.1.8@sha256:c59b01e74acd309c9c775f594917df6d9f8cad93fdfa7f40408aebeb5140f414
+    commands:
+      - sed '1,/^FROM /s/^FROM .*/& AS quality/' .devcontainer/Dockerfile > .woodpecker/quality.generated.Dockerfile
+      - cat .woodpecker/firmware.Dockerfile >> .woodpecker/quality.generated.Dockerfile
+      - cp .woodpecker/firmware.Dockerfile.dockerignore .woodpecker/quality.generated.Dockerfile.dockerignore
 
   - name: quality-and-firmware
     image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
     settings:
       <<: *image-labels
-      dockerfile: .woodpecker/firmware.Dockerfile
-      build_contexts:
-        - toolchain=oci-layout://.ci-toolchain
+      dockerfile: .woodpecker/quality.generated.Dockerfile
       build_args:
         - TOOLCHAIN=toolchain
         - QUALITY_BASE_REF=origin/${CI_COMMIT_TARGET_BRANCH}

@@ -1,5 +1,3 @@
-ARG TOOLCHAIN
-FROM ${TOOLCHAIN} AS test
 WORKDIR /src
 COPY . .
 ARG QUALITY_BASE_REF
@@ -13,4 +11,4 @@ RUN git config --global --add safe.directory /src \
     && test "$(cat COMMIT)" = "$RELEASE_COMMIT"
 
 FROM scratch
-COPY --from=test /src/build/release/ /
+COPY --from=quality /src/build/release/ /
