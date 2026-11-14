@@ -1,0 +1,53 @@
+when:
+  - event: pull_request
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git:2.12.0
+    settings:
+      depth: 0
+      partial: false
+      fetch_target_branch: true
+
+variables:
+  - &image-labels
+    title: ESP32 e-Paper Manager
+    description: Build and verify e-paper manager and ESP32 firmware
+    authors: RevoTale
+    licenses: MIT
+
+steps:
+  - name: export-toolchain
+    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
+    settings:
+      <<: *image-labels
+      dockerfile: .devcontainer/Dockerfile
+      repo: epaper-dev
+      dry_run: true
+      output: type=oci,tar=false,dest=.ci-toolchain
+
+  - name: quality-and-firmware
+    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
+    settings:
+      <<: *image-labels
+      dockerfile: .woodpecker/firmware.Dockerfile
+      build_contexts:
+        - toolchain=oci-layout://.ci-toolchain
+      build_args:
+        - TOOLCHAIN=toolchain
+        - QUALITY_BASE_REF=origin/${CI_COMMIT_TARGET_BRANCH}
+        - RELEASE_COMMIT=${CI_COMMIT_SHA}
+      repo: epaper-firmware-check
+      dry_run: true
+      output: type=local,dest=.ci-firmware
+
+  - name: build-runtime
+    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
+    depends_on: []
+    settings:
+      <<: *image-labels
+      dockerfile: Dockerfile
+      repo: epaper-runtime-check
+      build_args:
+        - VCS_REF=${CI_COMMIT_SHA}
+      dry_run: true

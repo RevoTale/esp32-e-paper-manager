@@ -1,0 +1,7 @@
+build/
+dist/
+.local*/
+firmware/esp32/build*/
+
+.ci-toolchain/
+.ci-firmware/
