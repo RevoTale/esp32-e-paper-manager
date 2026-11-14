@@ -1,0 +1,78 @@
+when:
+  - event: release
+    ref: refs/tags/v*.*.*
+
+concurrency:
+  group: release-publication
+  limit: 1
+
+clone:
+  git:
+    image: woodpeckerci/plugin-git:2.12.0
+    settings:
+      depth: 0
+      partial: false
+      tags: true
+      fetch_target_branch: true
+      target_branch: main
+
+steps:
+  - name: verify-release
+    image: ghcr.io/revotale/ci/base:v0.1.8@sha256:c59b01e74acd309c9c775f594917df6d9f8cad93fdfa7f40408aebeb5140f414
+    commands:
+      - |
+        set -eu
+        printf '%s\n' "$CI_COMMIT_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$'
+        test "$$(git rev-parse "$CI_COMMIT_TAG^{commit}")" = "$CI_COMMIT_SHA"
+        git merge-base --is-ancestor "$CI_COMMIT_SHA" origin/main
+      - sed '1,/^FROM /s/^FROM .*/& AS quality/' .devcontainer/Dockerfile > .woodpecker/quality.generated.Dockerfile
+      - cat .woodpecker/firmware.Dockerfile >> .woodpecker/quality.generated.Dockerfile
+      - cp .woodpecker/firmware.Dockerfile.dockerignore .woodpecker/quality.generated.Dockerfile.dockerignore
+
+  - name: quality-and-firmware
+    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
+    settings:
+      dockerfile: .woodpecker/quality.generated.Dockerfile
+      build_args:
+        - QUALITY_PREVIOUS_SHA=${CI_COMMIT_SHA}^
+        - RELEASE_COMMIT=${CI_COMMIT_SHA}
+      title: ESP32 e-Paper Manager
+      description: Verified ESP32 firmware update bundle
+      authors: RevoTale
+      licenses: MIT
+      repo: epaper-firmware
+      dry_run: true
+      output: type=local,dest=.ci-firmware
+
+  - name: attach-firmware
+    image: woodpeckerci/plugin-release:1.0.0@sha256:13277e795ac97a41e0e89a0b001e31a561baff912dcfe272a267bee0dda08fa1
+    settings:
+      api_key:
+        from_secret: forge_token
+      file_exists: fail
+      files:
+        - .ci-firmware/epaper-esp32-7in5-v2.tar.gz
+        - .ci-firmware/SHA256SUMS
+        - .ci-firmware/COMMIT
+
+  - name: publish-manager
+    image: ghcr.io/revotale/ci/buildx:v0.1.8@sha256:bbd7e0a849e2e87c6e1bbecc6f8caf7fae0849b84b7e6abab34af07f9b1657b9
+    settings:
+      registry: ghcr.io
+      repo: ghcr.io/revotale/esp32-e-paper-manager
+      title: ESP32 e-Paper Manager
+      description: Manager for ESP32 e-paper display receivers
+      authors: RevoTale
+      licenses: MIT
+      platforms: linux/amd64,linux/arm64
+      provenance: true
+      sbom: true
+      build_args:
+        - VCS_REF=${CI_COMMIT_SHA}
+      tags:
+        - ${CI_COMMIT_TAG}
+        - sha-${CI_COMMIT_SHA}
+      username:
+        from_secret: registry_username
+      password:
+        from_secret: registry_password

@@ -1,0 +1,39 @@
+when:
+  - event: [push, manual]
+    branch: main
+    repo: RevoTale/esp32-e-paper-manager
+
+depends_on: [quality]
+
+concurrency:
+  group: release-main
+  limit: 1
+
+steps:
+  - name: version
+    image: ghcr.io/revotale/ci/base:v0.1.8@sha256:c59b01e74acd309c9c775f594917df6d9f8cad93fdfa7f40408aebeb5140f414
+    environment:
+      GITHUB_TOKEN:
+        from_secret: version_token
+    commands:
+      - |
+        set -eu
+        case "$$(uname -m)" in
+          aarch64)
+            arch=arm64
+            checksum=74fb627a2ec43a97986bcae43830b146c24c711b15e5db7cc2f89e205548045c
+            ;;
+          x86_64)
+            arch=amd64
+            checksum=b8f518b1aeb1d1742f4e6e91a179b707cea4309a64fe3854f465bf724f04f6d3
+            ;;
+          *) exit 1 ;;
+        esac
+        release_tool=/tmp/semantic-release
+        curl --fail --silent --show-error --location --output "$release_tool" \
+          "https://github.com/go-semantic-release/semantic-release/releases/download/v2.31.0/semantic-release_v2.31.0_linux_$arch"
+        printf '%s  %s\n' "$checksum" "$release_tool" | sha256sum --check
+        chmod +x "$release_tool"
+        export GITHUB_REF="$CI_COMMIT_REF" GITHUB_SHA="$CI_COMMIT_SHA"
+        "$release_tool" --provider github --provider-opt "slug=$CI_REPO" \
+          --ci-condition github --allow-initial-development-versions --token "$GITHUB_TOKEN"
