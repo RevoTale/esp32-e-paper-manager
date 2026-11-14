@@ -30,7 +30,6 @@ steps:
       <<: *image-labels
       dockerfile: .woodpecker/quality.generated.Dockerfile
       build_args:
-        - TOOLCHAIN=toolchain
         - QUALITY_BASE_REF=origin/${CI_COMMIT_TARGET_BRANCH}
         - RELEASE_COMMIT=${CI_COMMIT_SHA}
       repo: epaper-firmware-check

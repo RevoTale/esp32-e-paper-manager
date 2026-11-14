@@ -4,6 +4,7 @@ dist/
 firmware/esp32/build*/
 
 .ci-firmware/
+.woodpecker/quality.generated.Dockerfile*
 .git/config
 .git/hooks/
 .git/logs/
