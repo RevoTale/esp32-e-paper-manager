@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static bool ready(int fd, bool writing, int64_t deadline, uint64_t connection) {
+bool ep_net_ready(int fd, bool writing, int64_t deadline, uint64_t connection) {
     while (ep_network_live(connection) && esp_timer_get_time() < deadline) {
         fd_set set; FD_ZERO(&set); FD_SET(fd, &set);
         struct timeval timeout = {.tv_sec = 0, .tv_usec = 25000};
@@ -20,7 +20,7 @@ static bool ready(int fd, bool writing, int64_t deadline, uint64_t connection) {
 static bool transfer(int fd, void *bytes, size_t size, int64_t deadline, uint64_t connection, bool writing) {
     uint8_t *cursor = bytes;
     while (size) {
-        if (!ready(fd, writing, deadline, connection)) return false;
+        if (!ep_net_ready(fd, writing, deadline, connection)) return false;
         ssize_t count = writing ? send(fd, cursor, size, 0) : recv(fd, cursor, size, 0);
         if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) continue;
         if (count <= 0 || (size_t)count > size) return false;
@@ -45,7 +45,7 @@ int ep_net_dial(const char *host, const char *port, uint64_t connection) {
         int flags = fcntl(fd, F_GETFL, 0);
         bool ok = flags >= 0 && fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
         if (ok && connect(fd, a->ai_addr, a->ai_addrlen) < 0) {
-            ok = errno == EINPROGRESS && ready(fd, true, deadline, connection);
+            ok = errno == EINPROGRESS && ep_net_ready(fd, true, deadline, connection);
             int error = 0; socklen_t size = sizeof error;
             ok = ok && getsockopt(fd, SOL_SOCKET, SO_ERROR, &error, &size) == 0 && !error;
         }

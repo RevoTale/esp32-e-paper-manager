@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"net"
 	"time"
 	_ "time/tzdata" // Standalone manager binaries must not depend on host zoneinfo.
 
@@ -47,10 +49,29 @@ func screenNetwork(c config) (screenTransport, *time.Location, error) {
 	if err != nil {
 		return screenTransport{}, nil, err
 	}
-	listener, err := listenTCP("tcp", c.deviceAddress)
+	listener, err := deviceListener(c)
 	if err != nil {
 		return screenTransport{}, nil, errors.Join(err, hub.Close())
 	}
 	return screenTransport{sender: hub, run: func(ctx context.Context) error { return hub.Serve(ctx, listener) },
 		close: func() error { return errors.Join(hub.Close(), listener.Close()) }}, zone, nil
+}
+
+func deviceListener(c config) (net.Listener, error) {
+	if c.screen.deviceCert == "" {
+		return listenTCP("tcp", c.deviceAddress)
+	}
+	pair, err := tls.LoadX509KeyPair(c.screen.deviceCert, c.screen.deviceKey)
+	if err != nil {
+		return nil, err
+	}
+	listener, err := listenTCP("tcp", c.deviceAddress)
+	if err != nil {
+		return nil, err
+	}
+	return tls.NewListener(listener, &tls.Config{
+		MinVersion:             tls.VersionTLS13,
+		SessionTicketsDisabled: true,
+		Certificates:           []tls.Certificate{pair},
+	}), nil
 }

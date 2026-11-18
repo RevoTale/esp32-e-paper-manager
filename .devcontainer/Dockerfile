@@ -1,7 +1,7 @@
 # Official TinyGo toolchain; verified Debian Trixie base in the source environment.
 FROM ghcr.io/tinygo-org/tinygo:0.42.0
 USER root
-ENV GOTOOLCHAIN=go1.26.8
+ENV GOTOOLCHAIN=go1.26.11
 RUN go version
 RUN apt-get update && apt-get install --yes --no-install-recommends \
     build-essential bison ca-certificates ccache clang-tidy-19 cmake flex git gperf \

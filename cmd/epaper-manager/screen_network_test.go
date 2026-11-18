@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net"
 	"net/http"
@@ -99,5 +101,62 @@ func TestNetworkCompositionFailsBeforeServingInvalidEnrollmentOrListener(t *test
 	}
 	if err := runScreen(c, make([]byte, 32)); err == nil {
 		t.Fatal("invalid composition served")
+	}
+}
+
+func TestDeviceTLSAdmission(t *testing.T) {
+	c := networkConfig(t)
+	cert, key, roots := testCertificate(t)
+	c.screen.deviceCert, c.screen.deviceKey = cert, key
+	listener, err := deviceListener(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = listener.Close() }()
+	for _, tc := range []struct {
+		name    string
+		roots   *x509.CertPool
+		version uint16
+		want    bool
+	}{
+		{"trusted", roots, tls.VersionTLS13, true},
+		{"unknown-manager", x509.NewCertPool(), tls.VersionTLS13, false},
+		{"old-tls", roots, tls.VersionTLS12, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			done := make(chan error, 1)
+			go func() {
+				conn, acceptErr := listener.Accept()
+				if acceptErr != nil {
+					done <- acceptErr
+					return
+				}
+				defer func() { _ = conn.Close() }()
+				_ = conn.SetDeadline(time.Now().Add(3 * time.Second))
+				done <- conn.(*tls.Conn).Handshake()
+			}()
+			conn, dialErr := tls.DialWithDialer(&net.Dialer{Timeout: 3 * time.Second}, "tcp", listener.Addr().String(), &tls.Config{
+				RootCAs: tc.roots, MinVersion: tc.version, MaxVersion: tc.version,
+			})
+			if conn != nil {
+				_ = conn.Close()
+			}
+			serverErr := <-done
+			if (dialErr == nil) != tc.want || (serverErr == nil) != tc.want {
+				t.Fatal(dialErr, serverErr)
+			}
+		})
+	}
+	c.screen.deviceKey = "missing"
+	if _, err := deviceListener(c); err == nil {
+		t.Fatal("accepted missing key")
+	}
+	for _, args := range [][]string{
+		append(wifiArgs(), "-device-tls-cert", cert),
+		append(screenArgs(), "-device-tls-cert", cert, "-device-tls-key", key),
+	} {
+		if _, err := parseConfig(args); err == nil {
+			t.Fatal("accepted invalid device TLS flags")
+		}
 	}
 }

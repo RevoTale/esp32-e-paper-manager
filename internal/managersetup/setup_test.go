@@ -9,13 +9,7 @@ import (
 )
 
 func TestSetupCreatesAndPreservesCredentials(t *testing.T) {
-	directory := t.TempDir()
-	source := filepath.Join(directory, "source.json")
-	enrollment := hostprovision.Enrollment{DeviceID: [16]byte{1}, DeviceKey: [32]byte{2}, Timezone: "Europe/Kyiv"}
-	if err := hostprovision.SaveEnrollment(source, enrollment); err != nil {
-		t.Fatal(err)
-	}
-	configuration := Config{Enrollment: source, Directory: filepath.Join(directory, "credentials"), UID: -1, GID: -1}
+	configuration := fixture(t)
 	if err := Run(configuration); err != nil {
 		t.Fatal(err)
 	}

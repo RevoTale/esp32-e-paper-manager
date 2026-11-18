@@ -14,8 +14,19 @@ func (codec Codec) EncodeCorrelatedRequest(dst []byte, request Request, id Reque
 	if !codec.esp32 || id == (RequestID{}) {
 		return ErrInvalidConfig
 	}
-	if err := codec.EncodeRequest(dst, request); err != nil {
-		return err
+	if request.Operation == OperationSetManager {
+		if err := request.Change.encode(dst); err != nil {
+			return err
+		}
+	} else {
+		base := request
+		if request.Operation == OperationInspectManager {
+			base.Operation = OperationInspect
+		}
+		if err := codec.EncodeRequest(dst, base); err != nil {
+			return err
+		}
+		dst[5] = byte(request.Operation)
 	}
 	dst[4] = 3
 	copy(dst[486:502], id[:])
@@ -35,8 +46,6 @@ func (codec Codec) DecodeCorrelatedResponse(src []byte, id RequestID) (Response,
 	}
 	var legacy [ResponseSize]byte
 	copy(legacy[:], src)
-	legacy[4] = 2
 	clear(legacy[392:408])
-	binary.BigEndian.PutUint32(legacy[508:], crc32.ChecksumIEEE(legacy[:508]))
-	return codec.DecodeResponse(legacy[:])
+	return codec.decodeResponseFields(legacy[:])
 }

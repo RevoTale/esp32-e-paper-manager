@@ -35,10 +35,12 @@ static void dispatch(ep_runtime *r, ep_source source, const ep_message *request,
         ep_screen_disconnect(&r->screen);
         // A failed write may still change authoritative storage. Never resume
         // a network session using the old key after ANY mutation attempt.
-        if (request->bytes[5] >= 2 && request->bytes[5] <= 4) r->network_fenced = true;
         int result = r->boot_safe ? ep_provision(&r->flash, request->bytes, reply->bytes) :
             ep_provision_readonly(&r->flash, request->bytes, reply->bytes);
-        if (!result) reply->size = 512;
+        if (!result) {
+            reply->size = 512;
+            if (ep_provision_may_change(request->bytes, reply->bytes)) r->network_fenced = true;
+        }
     } else {
         ep_record record;
         if (!ep_wire_decode(request->bytes, request->size, &record) || record.kind == 9) return;

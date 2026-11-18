@@ -47,19 +47,22 @@ func run(arguments []string, input io.Reader, output io.Writer) error {
 	if err := flags.Parse(arguments); err != nil {
 		return err
 	}
+	if flags.Arg(0) == "mobile-init" {
+		return mobileInit(flags.Args(), *registry)
+	}
+	if flags.Arg(0) == "set-manager" {
+		return setManager(flags.Args(), *target, *portName, output)
+	}
 	if flags.NArg() != 1 {
-		return errors.New("usage: epaperprovision [flags] inspect|provision|rotate|erase|diagnose")
+		return errors.New("usage: epaperprovision [flags] inspect|provision|rotate|erase|diagnose|set-manager ADDRESS")
 	}
 	operation, err := parseOperation(flags.Arg(0), *confirmErase)
 	if err != nil {
 		return err
 	}
-	codec, err := boardCodec(*target)
+	codec, err := usbCodec(*target, *correlated)
 	if err != nil {
 		return err
-	}
-	if *correlated && *target != "esp32" {
-		return errors.New("-usb-v3 requires -target esp32")
 	}
 	port, closePort, err := connectFor(*portName, codec)
 	if err != nil {

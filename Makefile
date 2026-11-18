@@ -67,7 +67,8 @@ c-size: native
 	clang-tidy-19 -p "$(BUILD_DIR)/native" firmware/esp32/core/*.c firmware/esp32/tests/*.c firmware/esp32/platform/net_io.c firmware/esp32/platform/display_guard.c firmware/esp32/platform/uart.c
 
 interop: native
-	cd firmware/esp32/tests/interop && EP_CRYPTO_CLI="$(BUILD_DIR)/native/crypto_cli" EP_WIRE_CLI="$(BUILD_DIR)/native/wire_cli" EP_RECEIVER_CLI="$(BUILD_DIR)/native/receiver_cli" EP_REGION_CLI="$(BUILD_DIR)/native/region_cli" go test -timeout 30s ./...
+	go build -trimpath -o "$(BUILD_DIR)/epaperprovision-test" ./cmd/epaperprovision
+	cd firmware/esp32/tests/interop && EP_PROVISION_CLI="$(BUILD_DIR)/epaperprovision-test" EP_TLS_CLI="$(BUILD_DIR)/native/mobile_tls_cli" EP_CRYPTO_CLI="$(BUILD_DIR)/native/crypto_cli" EP_WIRE_CLI="$(BUILD_DIR)/native/wire_cli" EP_RECEIVER_CLI="$(BUILD_DIR)/native/receiver_cli" EP_REGION_CLI="$(BUILD_DIR)/native/region_cli" go test -timeout 30s ./...
 
 tinygo:
 	mkdir -p "$(BUILD_DIR)"

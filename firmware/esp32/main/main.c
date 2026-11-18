@@ -5,6 +5,7 @@
 #include "display.h"
 #include "display_guard.h"
 #include "network.h"
+#include "wifi_setup.h"
 #include "esp_mac.h"
 #include "esp_task_wdt.h"
 #include "mbedtls/platform_util.h"
@@ -24,6 +25,7 @@ void app_main(void) {
     if (esp_read_mac(boot + 2, ESP_MAC_WIFI_STA) != ESP_OK) r->boot_safe = false;
     ep_put_be64(boot + 8, epoch);
     if (stored == 1) for (unsigned i = 0; i < 16; i++) id[i] = config[24 + i];
+    if (r->boot_safe && stored == 1) ep_wifi_setup_boot(&r->flash, config, generation);
     ep_panel_io io = {0};
     bool recovery = ep_display_recovery_required();
     bool display_ready = ep_display_open(&io) == ESP_OK;

@@ -2,7 +2,7 @@ module github.com/RevoTale/esp32-e-paper-manager/tools
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.11
 
 tool (
 	github.com/RevoTale/esp32-e-paper-manager/tools/cmd/worktree-covercheck

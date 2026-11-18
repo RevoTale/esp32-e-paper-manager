@@ -13,8 +13,12 @@ const (
 	CodeRecovery // Boot lifetime unavailable; physical erase then reboot required.
 )
 
+func (codec Codec) supportsResponse(operation Operation) bool {
+	return validOperation(operation) || codec.esp32 && (operation == OperationSetManager || operation == OperationInspectManager)
+}
+
 func (codec Codec) validResponse(r Response) bool {
-	if !validOperation(r.Operation) || r.Code > CodeRecovery || !validSuccess(r) {
+	if !codec.supportsResponse(r.Operation) || r.Code > CodeRecovery || !validSuccess(r) {
 		return false
 	}
 	switch r.State {
@@ -34,7 +38,7 @@ func validSuccess(r Response) bool {
 		return true
 	}
 	switch r.Operation {
-	case OperationProvision, OperationRotate:
+	case OperationProvision, OperationRotate, OperationSetManager:
 		return r.State == StateProvisioned
 	case OperationErase:
 		return r.State == StateBlank

@@ -30,6 +30,13 @@ func boardCodec(target string) (provision.Codec, error) {
 	}
 }
 
+func usbCodec(target string, correlated bool) (provision.Codec, error) {
+	if correlated && target != "esp32" {
+		return provision.Codec{}, errors.New("-usb-v3 requires -target esp32")
+	}
+	return boardCodec(target)
+}
+
 func connectFor(requested string, codec provision.Codec) (serialDevice, func(), error) {
 	if codec.AuthMode() == provision.AuthWPA3SAE {
 		return connect(requested)

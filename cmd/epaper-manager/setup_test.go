@@ -10,6 +10,9 @@ import (
 
 func TestSetupCLI(t *testing.T) {
 	parent := t.TempDir()
+	if err := os.Chmod(parent, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	source := filepath.Join(parent, "device.json")
 	if err := hostprovision.SaveEnrollment(source, hostprovision.Enrollment{
 		DeviceID: [16]byte{1}, DeviceKey: [32]byte{2}, Timezone: "Europe/Kyiv",

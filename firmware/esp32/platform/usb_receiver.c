@@ -42,7 +42,8 @@ static void receive(void *context) {
         if (valid) valid = ep_channel_exchange(channel, &request, &reply) &&
             ep_uart_write(reply.bytes, reply.size);
         if (valid && request.size == 512 && !memcmp(request.bytes, "EPCQ", 4))
-            restart = request.bytes[5] >= 2 && request.bytes[5] <= 4 && reply.bytes[12] == 0;
+            restart = reply.size == 512 && reply.bytes[12] == 0 &&
+                ep_provision_may_change(request.bytes, reply.bytes);
         mbedtls_platform_zeroize(request.bytes, sizeof request.bytes);
         mbedtls_platform_zeroize(reply.bytes, sizeof reply.bytes);
         last = esp_timer_get_time();

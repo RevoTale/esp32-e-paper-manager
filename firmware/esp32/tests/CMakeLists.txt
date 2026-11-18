@@ -179,3 +179,8 @@ add_test(NAME uart_read COMMAND uart_read_test)
 foreach(target screen_test screen_fault_test screen_completion_test screen_region_test receiver_cli startup_fault_test)
     target_sources(${target} PRIVATE ../core/screen_region.c ../core/region.c)
 endforeach()
+
+add_executable(mobile_tls_cli mobile_tls_cli.c ../platform/device_tls.c ../platform/net_io.c)
+target_include_directories(mobile_tls_cli PRIVATE ../platform net_stubs)
+target_link_libraries(mobile_tls_cli PRIVATE mbedtls)
+target_compile_options(mobile_tls_cli PRIVATE -Wall -Wextra -Werror)
