@@ -18,6 +18,8 @@ const (
 	OperationRotate
 	OperationErase
 	OperationDiagnose
+	OperationSetManager     // ESP32 correlated USB only; never valid on the v2 wire.
+	OperationInspectManager // Read-only feature probe for endpoint-only updates.
 )
 
 type State uint8
@@ -32,6 +34,7 @@ const (
 type Request struct {
 	Operation Operation
 	Config    Config
+	Change    ManagerChange
 }
 
 type Response struct {
@@ -84,7 +87,7 @@ func (codec Codec) DecodeRequest(source []byte) (Request, error) {
 }
 
 func (codec Codec) EncodeResponse(destination []byte, response Response) error {
-	if len(destination) < ResponseSize || !codec.validResponse(response) {
+	if len(destination) < ResponseSize || !validOperation(response.Operation) || !codec.validResponse(response) {
 		return ErrInvalidConfig
 	}
 	fill(destination[:ResponseSize], 0)
@@ -104,9 +107,13 @@ func (codec Codec) EncodeResponse(destination []byte, response Response) error {
 }
 
 func (codec Codec) DecodeResponse(source []byte) (Response, error) {
-	if !validWire(source, "EPCR") {
+	if !validWire(source, "EPCR") || !validOperation(Operation(source[5])) {
 		return Response{}, ErrInvalidConfig
 	}
+	return codec.decodeResponseFields(source)
+}
+
+func (codec Codec) decodeResponseFields(source []byte) (Response, error) {
 	ssidLength, timezoneLength := int(source[8]), int(source[9])
 	managerLength := int(binary.BigEndian.Uint16(source[10:12]))
 	if ssidLength > MaxSSID || managerLength > MaxManager || timezoneLength > MaxTimezone {

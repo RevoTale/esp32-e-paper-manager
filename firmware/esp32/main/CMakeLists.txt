@@ -7,9 +7,9 @@ idf_component_register(SRCS "main.c" "runtime.c" "../core/bytes.c" "../core/epoc
     "../core/panel75.c" "../core/panel75_io.c" "../platform/display.c"
     "../core/panel75_trace.c" "../core/owner.c" "../core/screen_timing.c"
     "../platform/channel.c" "../platform/usb_receiver.c" "../platform/display_guard.c"
-    "../platform/network.c" "../platform/net_io.c" "../platform/radio.c"
+    "../platform/network.c" "../platform/net_io.c" "../platform/device_tls.c" "../platform/wifi_setup.c" "../platform/radio.c"
     INCLUDE_DIRS "../core" "../platform"
-    REQUIRES esp_partition spi_flash esp_driver_uart esp_timer mbedtls esp_driver_spi esp_driver_gpio
+    REQUIRES esp_http_server esp_partition spi_flash esp_driver_uart esp_timer mbedtls esp_driver_spi esp_driver_gpio
         esp_wifi esp_event esp_netif lwip esp_system esp_hw_support)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror -Wconversion)
 
@@ -17,4 +17,7 @@ target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra -Werror -Wconversi
 # credentials/register contents; stale local sdkconfig must not override this.
 if(NOT CONFIG_ESP_SYSTEM_PANIC_SILENT_REBOOT OR NOT CONFIG_ESP_COREDUMP_ENABLE_TO_NONE)
     message(FATAL_ERROR "Receiver requires silent panic reboot and disabled core dumps")
+endif()
+if(NOT CONFIG_MBEDTLS_SSL_PROTO_TLS1_3)
+    message(FATAL_ERROR "Mobile receiver requires TLS 1.3. Configure a fresh build directory with sdkconfig.defaults.")
 endif()

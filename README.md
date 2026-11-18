@@ -8,7 +8,16 @@ Waveshare e-paper board over an authenticated, encrypted Wi-Fi link or USB.
 - Recovery-aware delivery and configurable normal/urgent full-refresh policy.
 - USB provisioning keeps device credentials out of dashboard requests.
 
-## Getting started
+## Connect a portable display
+
+1. Flash the matching receiver and enroll it once over USB. Keep the generated private `device.json`.
+2. On the server, import the enrollment and create the TLS identity for a stable DNS name or IPv4 address. Bind that identity to the screen once over USB.
+3. Start the manager with Docker Compose. Expose only its device TCP port. Your task adapter submits HTML to the private manager API.
+4. When moving the screen, enter the new Wi-Fi details from your phone. The receiver reconnects to the same manager.
+
+Follow the [portable display setup](docs/simple-setup.md#set-up-a-mobile-candidate) for the commands. Use firmware, provisioning CLI and manager from the same build.
+
+## Developer setup
 
 Pushes to main publish versioned firmware and manager images after CI passes.
 The [Go client library](docs/go-client.md) uses the same version tag.
@@ -20,6 +29,9 @@ See [automatic releases](docs/releasing.md) and
    compatibility, then build the ESP32 firmware and Linux manager.
 3. Follow the [receiver guide](firmware/esp32/README.md) for hardware and USB
    provisioning. Do not overwrite an existing enrollment or flash partition.
+   To move a configured ESP32 to a different server, use the
+   [USB `set-manager` command](firmware/esp32/README.md#move-an-enrolled-receiver-to-another-manager)
+   with compatible firmware. The same enrollment file works on the new server.
 4. Follow [simple Docker setup](docs/simple-setup.md) (or the existing
    [bind-mount deployment](docs/container-deployment.md)) and the
    [screen API guide](docs/screen-api.md) to submit a dashboard.

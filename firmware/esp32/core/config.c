@@ -22,8 +22,21 @@ static bool text(const uint8_t *p, size_t size, size_t min, size_t max) {
 static bool alnum(uint8_t c) {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
 }
-static bool manager(const uint8_t *p, size_t size) {
-    if (size < 9 || size > 255 || memcmp(p, "tcp://", 6)) return false;
+static bool endpoint_portion(const uint8_t *p, size_t *size) {
+    if (*size < 9 || *size > 255) return false;
+    if (!memcmp(p, "tcp://", 6)) return true;
+    if (memcmp(p, "tls://", 6) || *size < 74 || p[*size - 65] != '#') return false;
+    bool nonzero = false;
+    for (size_t i = *size - 64; i < *size; i++) {
+        unsigned c = p[i];
+        if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) return false;
+        nonzero |= c != '0';
+    }
+    *size -= 65;
+    return nonzero;
+}
+static bool ep_manager_valid(const uint8_t *p, size_t size) {
+    if (!endpoint_portion(p, &size)) return false;
     size_t i = 6, label = 0;
     for (; i < size && p[i] != ':'; i++) {
         if (p[i] == '.') {
@@ -42,6 +55,28 @@ static bool manager(const uint8_t *p, size_t size) {
     }
     return port != 0;
 }
+// New numeric endpoints must use four decimal IPv4 octets. Preserve compatibility
+// with existing journal records, which use ep_manager_valid when loaded at boot.
+bool ep_manager_change_endpoint(const uint8_t *p, size_t size) {
+    if (!ep_manager_valid(p, size)) return false;
+    const uint8_t *host = p + 6;
+    const uint8_t *end = memchr(host, ':', size - 6);
+    for (const uint8_t *c = host; c < end; c++)
+        if (*c != '.' && (*c < '0' || *c > '9')) return true;
+    unsigned count = 1, octet = 0;
+    for (const uint8_t *c = host; c < end; c++) {
+        if (*c == '.') {
+            octet = 0;
+            host = c + 1;
+            count++;
+        } else {
+            if (c != host && *host == '0') return false;
+            octet = octet * 10 + (unsigned)(*c - '0');
+            if (octet > 255) return false;
+        }
+    }
+    return count == 4;
+}
 static bool timezone(const uint8_t *p, size_t size) {
     if (!size || size > 64 || p[0] == '/' || p[size-1] == '/') return false;
     for (size_t i = 0; i < size; i++) {
@@ -53,6 +88,6 @@ static bool timezone(const uint8_t *p, size_t size) {
 bool ep_config_valid(const uint8_t p[512]) {
     size_t manager_size = (size_t)p[20] * 256 + p[21];
     return p[16] == 2 && text(p + 327, p[17], 1, 32) && text(p + 359, p[18], 8, 63) &&
-        timezone(p + 422, p[19]) && manager(p + 72, manager_size) &&
+        timezone(p + 422, p[19]) && ep_manager_valid(p + 72, manager_size) &&
         !ep_filled(p + 24, 16, 0) && !ep_filled(p + 40, 32, 0);
 }

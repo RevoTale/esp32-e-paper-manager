@@ -13,21 +13,24 @@ import (
 )
 
 type screenConfig struct {
-	partial             partialConfig
-	refreshPolicy       bool
-	urgent              time.Duration
-	usbWorker, serial   string
-	transport, timezone string
-	maintenance         time.Duration
-	enabled             bool
-	size                display.Size
-	trusted             bool
-	interval            time.Duration
-	policy              renderbatch.Policy
+	deviceCert, deviceKey string
+	partial               partialConfig
+	refreshPolicy         bool
+	urgent                time.Duration
+	usbWorker, serial     string
+	transport, timezone   string
+	maintenance           time.Duration
+	enabled               bool
+	size                  display.Size
+	trusted               bool
+	interval              time.Duration
+	policy                renderbatch.Policy
 }
 
 func screenFlags(f *flag.FlagSet, c *screenConfig) {
 	partialFlags(f, &c.partial)
+	f.StringVar(&c.deviceCert, "device-tls-cert", "", "device listener TLS certificate chain")
+	f.StringVar(&c.deviceKey, "device-tls-key", "", "device listener TLS private key")
 	f.BoolVar(&c.enabled, "screen", false, "use the native Go HTML/inline-CSS screen renderer")
 	f.StringVar(&c.transport, "screen-transport", "usb", "screen delivery: usb or wifi (EPN2)")
 	f.StringVar(&c.timezone, "timezone", "Europe/Kiev", "USB corner time zone; Wi-Fi uses the USB-provisioned enrollment zone")
@@ -45,6 +48,9 @@ func screenFlags(f *flag.FlagSet, c *screenConfig) {
 }
 
 func validateMode(flags *flag.FlagSet, c config) (config, error) {
+	if !validDeviceTLS(c.screen) {
+		return config{}, errors.New("device TLS requires Wi-Fi screen mode and both device TLS files")
+	}
 	if !c.screen.enabled {
 		return validateLegacy(c)
 	}
@@ -123,4 +129,11 @@ func validateScreenTransport(c screenConfig) error {
 	}
 	_, err := time.LoadLocation(c.timezone)
 	return err
+}
+
+func validDeviceTLS(c screenConfig) bool {
+	if c.deviceCert == "" && c.deviceKey == "" {
+		return true
+	}
+	return c.enabled && c.transport == "wifi" && c.deviceCert != "" && c.deviceKey != ""
 }

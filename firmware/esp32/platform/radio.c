@@ -37,6 +37,12 @@ bool ep_radio_open(const uint8_t config[512]) {
     if (esp_wifi_init(&init) != ESP_OK) return false;
     if (esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, event, NULL) != ESP_OK ||
         esp_event_handler_register(IP_EVENT, ESP_EVENT_ANY_ID, event, NULL) != ESP_OK) return false;
+    if (esp_wifi_set_storage(WIFI_STORAGE_RAM) != ESP_OK || esp_wifi_set_mode(WIFI_MODE_STA) != ESP_OK ||
+        !ep_radio_configure(config) || esp_wifi_set_ps(WIFI_PS_MIN_MODEM) != ESP_OK) return false;
+    return esp_wifi_start() == ESP_OK;
+}
+bool ep_radio_configure(const uint8_t config[512]) {
+    atomic_store(&online, false);
     wifi_config_t station = {0};
     memcpy(station.sta.ssid, config + 327, config[17]);
     memcpy(station.sta.password, config + 359, config[18]);
@@ -47,12 +53,8 @@ bool ep_radio_open(const uint8_t config[512]) {
     station.sta.pmf_cfg.capable = true;
     // WPA2 compatibility, never WPA1/TKIP; negotiated AP admission above is
     // stricter than authmode's numeric threshold (which includes WPA/WPA2 mixed).
-    esp_err_t result = esp_wifi_set_storage(WIFI_STORAGE_RAM);
-    if (!result) result = esp_wifi_set_mode(WIFI_MODE_STA);
-    if (!result) result = esp_wifi_set_config(WIFI_IF_STA, &station);
+    esp_err_t result = esp_wifi_set_config(WIFI_IF_STA, &station);
     mbedtls_platform_zeroize(&station, sizeof station);
-    if (!result) result = esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
-    if (!result) result = esp_wifi_start();
     return result == ESP_OK;
 }
 bool ep_radio_online(void) { return atomic_load(&online); }
@@ -63,4 +65,11 @@ bool ep_radio_join(void) {
     while (!ep_radio_online() && esp_timer_get_time() < deadline) vTaskDelay(pdMS_TO_TICKS(100));
     if (ep_radio_online()) return true;
     esp_wifi_disconnect(); return false;
+}
+
+bool ep_radio_matches(const uint8_t config[512]) {
+    wifi_ap_record_t ap;
+    if (!ep_radio_online() || !secure_ap() || esp_wifi_sta_get_ap_info(&ap) != ESP_OK) return false;
+    return strnlen((const char *)ap.ssid, sizeof ap.ssid) == config[17] &&
+        !memcmp(ap.ssid, config + 327, config[17]);
 }

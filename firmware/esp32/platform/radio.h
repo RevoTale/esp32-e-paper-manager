@@ -4,3 +4,5 @@
 bool ep_radio_open(const uint8_t config[512]);
 bool ep_radio_join(void);
 bool ep_radio_online(void);
+bool ep_radio_configure(const uint8_t config[512]);
+bool ep_radio_matches(const uint8_t config[512]);

@@ -1,5 +1,6 @@
 #include "network.h"
 #include "net_io.h"
+#include "device_tls.h"
 #include "radio.h"
 #include "provision.h"
 #include "secure.h"
@@ -59,14 +60,21 @@ static bool blocked(void) {
     taskENTER_CRITICAL(&lock); bool value = net.blocked; taskEXIT_CRITICAL(&lock);
     return value;
 }
+static const char *pin;
+static bool read_bytes(int fd, void *p, size_t n, int64_t deadline, uint64_t connection) {
+    return pin ? ep_tls_transfer(fd, p, n, deadline, connection, false) : ep_net_read(fd, p, n, deadline, connection);
+}
+static bool write_bytes(int fd, void *p, size_t n, int64_t deadline, uint64_t connection) {
+    return pin ? ep_tls_transfer(fd, p, n, deadline, connection, true) : ep_net_write(fd, p, n, deadline, connection);
+}
 static bool authenticate(int fd, uint64_t connection, ep_secure *session) {
     uint8_t preface[20] = {'E', 'P', 'N', '2'}, challenge[56], auth[72];
     memcpy(preface + 4, net.config + 24, 16);
     int64_t deadline = esp_timer_get_time() + 15000000;
     bool ok = ep_challenge(net.config + 40, net.config + 24, net.epoch, connection, challenge) &&
-        ep_net_write(fd, preface, sizeof preface, deadline, connection) &&
-        ep_net_write(fd, challenge, sizeof challenge, deadline, connection) &&
-        ep_net_read(fd, auth, sizeof auth, deadline, connection) &&
+        write_bytes(fd, preface, sizeof preface, deadline, connection) &&
+        write_bytes(fd, challenge, sizeof challenge, deadline, connection) &&
+        read_bytes(fd, auth, sizeof auth, deadline, connection) &&
         ep_secure_start(session, net.config + 40, net.config + 24, challenge, auth);
     mbedtls_platform_zeroize(auth, sizeof auth);
     return ok;
@@ -74,12 +82,12 @@ static bool authenticate(int fd, uint64_t connection, ep_secure *session) {
 static bool exchange(int fd, uint64_t connection, ep_secure *session) {
     uint8_t envelope[EP_RECORD + 32]; ep_message request = {.connection = connection}, reply;
     // Idle authenticated sockets need no polling traffic or periodic frame replay.
-    if (!ep_net_read(fd, envelope, 1, INT64_MAX, connection)) return false;
+    if (!read_bytes(fd, envelope, 1, INT64_MAX, connection)) return false;
     int64_t deadline = esp_timer_get_time() + 5000000;
-    if (!ep_net_read(fd, envelope + 1, 15, deadline, connection)) return false;
+    if (!read_bytes(fd, envelope + 1, 15, deadline, connection)) return false;
     size_t plain_size = (size_t)envelope[8] * 256 + envelope[9], received;
     if (!plain_size || plain_size > EP_RECORD ||
-        !ep_net_read(fd, envelope + 16, plain_size + 16, deadline, connection) ||
+        !read_bytes(fd, envelope + 16, plain_size + 16, deadline, connection) ||
         !ep_secure_open(session, envelope, plain_size + 32, request.bytes, sizeof request.bytes, &received)) return false;
     ep_record record;
     if (!ep_wire_decode(request.bytes, received, &record) || record.kind == 9) return false;
@@ -87,18 +95,20 @@ static bool exchange(int fd, uint64_t connection, ep_secure *session) {
     if (!ep_channel_exchange(net.channel, &request, &reply) || !ep_network_live(connection)) return false;
     size_t written;
     return ep_secure_seal(session, reply.bytes, reply.size, envelope, sizeof envelope, &written) &&
-        ep_net_write(fd, envelope, written, esp_timer_get_time() + 5000000, connection);
+        write_bytes(fd, envelope, written, esp_timer_get_time() + 5000000, connection);
 }
 static void run_connection(const char *host, const char *port, uint64_t connection) {
     state(3);
     int fd = ep_net_dial(host, port, connection);
     if (fd < 0) return;
     ep_secure session = {0}; state(4);
-    if (authenticate(fd, connection, &session)) {
+    if ((!pin || ep_tls_start(fd, host, pin, connection)) && authenticate(fd, connection, &session)) {
         state(5);
         while (exchange(fd, connection, &session)) {}
     }
-    ep_secure_free(&session); close(fd);
+    ep_secure_free(&session);
+    if (pin) ep_tls_close();
+    close(fd);
     ep_channel_close(net.channel, connection);
 }
 static void run(void *context) {
@@ -107,6 +117,11 @@ static void run(void *context) {
     char host[256] = {0}, port[6] = {0};
     size_t length = (size_t)net.config[20] * 256 + net.config[21];
     memcpy(host, net.config + 78, length - 6);
+    if (!memcmp(net.config + 72, "tls://", 6)) {
+        char *fragment = strchr(host, '#');
+        if (!fragment) { state(7); vTaskDelete(NULL); return; }
+        *fragment = 0; pin = fragment + 1;
+    }
     char *separator = strrchr(host, ':');
     unsigned number = 0;
     for (const char *digit = separator + 1; *digit; digit++) number = number * 10 + (unsigned)(*digit - '0');

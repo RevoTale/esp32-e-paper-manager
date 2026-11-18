@@ -141,11 +141,80 @@ static void postconditions(void) {
     assert(ep_provision(&io, request, reply) == 0); reply_check(reply, 1, 3);
     assert(ep_be64(reply + 16) == 1);
 }
+static void manager_request(uint8_t *q, const char *endpoint, uint64_t generation) {
+    size_t n = strlen(endpoint);
+    assert(n <= 255);
+    memset(q, 0, 512); memcpy(q, "EPCQ", 4); q[4] = 3; q[5] = EP_SET_MANAGER;
+    ep_put_be64(q + 8, generation);
+    q[21] = (uint8_t)n; memset(q + 24, 0x35, 16); memcpy(q + 72, endpoint, n);
+    q[486] = 1; checksum(q);
+}
+static void invalid_manager_records(void) {
+    uint8_t q[512];
+    const char *bad_ips[] = {"tcp://192.168.1.999:9757", "tcp://192.168.01.2:9757", "tcp://127.1:9757"};
+    for (unsigned i = 0; i < sizeof bad_ips / sizeof bad_ips[0]; i++) {
+        manager_request(q, bad_ips[i], 1); rejected(q);
+    }
+    const unsigned unused[] = {6, 7, 16, 19, 22, 23, 40, 71, 81, 326, 327, 359, 485, 502};
+    for (unsigned i = 0; i < sizeof unused / sizeof unused[0]; i++) {
+        manager_request(q, "tcp://a:1", 1); q[unused[i]] = 8; rejected(q);
+    }
+    manager_request(q, "tcp://a:1", 0); rejected(q);
+    manager_request(q, "tcp://a:1", 1); memset(q + 24, 0, 16); rejected(q);
+    manager_request(q, "tcp://a:1", 1); q[4] = 2; q[486] = 0; rejected(q);
+    manager_request(q, "tcp://a:1", 1); q[20] = 255; rejected(q);
+}
+static void manager_changes(void) {
+    uint8_t q[512], r[512], expected[512], actual[512]; uint64_t gen;
+    fresh(); manager_request(q, "tcp://a:1", 1);
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 2 && writes == 0);
+    request_make(q, 2); assert(ep_provision(&io, q, r) == 0 && r[12] == 0);
+    assert(ep_config_load(&io, expected, &gen) == 1 && gen == 1);
+    faults_clear(); manager_request(q, "tcp://a:1", 2);
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 2 && !ep_provision_may_change(q, r));
+    manager_request(q, "tcp://a:1", 1); q[24]++; checksum(q);
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 2 && writes == 0 && erases == 0);
+    manager_request(q, "tcp://a:1", 1);
+    assert(ep_provision_readonly(&io, q, r) == 0 && r[12] == 5 && writes == 0);
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 0 && ep_provision_may_change(q, r));
+    assert(writes == 1 && erases == 1 && !memcmp(r + 392, q + 486, 16));
+    assert(ep_filled(r + 72 + 9, 255 - 9, 0) && !memcmp(r + 72, "tcp://a:1", 9));
+    for (size_t i = 0; i <= 500; i++) assert(memcmp(r + i, "password", 8) && !ep_filled(r + i, 8, 0xa6));
+    expected[21] = 9; memcpy(expected + 72, q + 72, 255);
+    assert(ep_config_load(&io, actual, &gen) == 1 && gen == 2 && !memcmp(expected + 16, actual + 16, 470));
+    manager_request(q, "tcp://a:1", gen); faults_clear();
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 0 && !ep_provision_may_change(q, r));
+    assert(ep_be64(r + 16) == 2 && writes == 0 && erases == 0);
+    manager_request(q, "tcp://next:9757", gen); faults_clear(); lose_verified = true;
+    assert(ep_provision(&io, q, r) == 0 && r[12] == 3 && ep_provision_may_change(q, r));
+    assert(ep_be64(r + 16) == 2 && !memcmp(r + 72, "tcp://a:1", 9));
+    for (size_t i = 8192; i < sizeof storage; i++) assert(storage[i] == 255);
+}
+static void wifi_changes(void) {
+    uint8_t q[512], r[512], cfg[512], copy[512]; uint64_t gen;
+    fresh(); request_make(q,2); assert(ep_provision(&io,q,r)==0 && r[12]==0);
+    assert(ep_config_load(&io,cfg,&gen)==1); faults_clear();
+    assert(ep_config_save_wifi(&io,cfg,gen) && writes==0);
+    cfg[327] = 'z'; assert(!ep_config_save_wifi(&io,cfg,gen+1));
+    cfg[40] ^= 1; assert(!ep_config_save_wifi(&io,cfg,gen)); cfg[40] ^= 1;
+    assert(ep_config_save_wifi(&io,cfg,gen));
+    assert(ep_config_load(&io,copy,&gen)==1 && gen==2 && !memcmp(copy+16,cfg+16,470));
+    cfg[327] = 'y'; faults_clear(); lose_verified = true; assert(!ep_config_save_wifi(&io,cfg,gen));
+    assert(ep_config_load(&io,copy,&gen)==1 && gen==2 && copy[327]=='z');
+    const char *endpoint="tls://192.0.2.2:443#0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    assert(ep_manager_change_endpoint((const uint8_t *)endpoint,strlen(endpoint)));
+    assert(!ep_manager_change_endpoint((const uint8_t *)endpoint,strlen(endpoint)-1));
+    faults_clear(); manager_request(q,endpoint,gen);
+    assert(ep_provision(&io,q,r)==0 && r[12]==0);
+    manager_request(q,"tcp://a:1",gen+1);
+    assert(ep_provision(&io,q,r)==0 && r[12]==2 && writes==1);
+}
 int main(void) {
     ep_flash unavailable = {0}; uint8_t request[512], reply[512];
     request_make(request, 1);
     assert(ep_provision_readonly(&unavailable, request, reply) == 0);
     reply_check(reply, 3, 3);
     fresh(); parser_bounds(); operation_failures(); postconditions();
+    invalid_manager_records(); manager_changes(); wifi_changes();
     puts("provision faults: parser bounds, secret-free responses, I/O and postconditions passed");
 }

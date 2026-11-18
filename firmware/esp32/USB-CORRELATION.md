@@ -29,6 +29,24 @@ poisoned-client reuse, v2 compatibility, and Go-to-native interoperability.
 
 ## Candidate use and compatibility
 
+The endpoint-only update adds **v3 physical USB** operations 7 (read-only
+feature probe and inspect) and 6 (set manager). Older firmware rejects the
+probe, so the CLI sends no mutation to an unsupported board. The probe has
+the same payload as Inspect. The change request carries the inspected
+generation at bytes 8–15 (big-endian), endpoint byte length at 20–21,
+device ID at 24–39, and the endpoint starting at byte 72 (255-byte capacity).
+All other payload bytes are zero apart from the existing correlation ID.
+Flash layout, network handshake and manager API are unchanged.
+
+The receiver requires a provisioned journal matching both ID and generation.
+It copies the authoritative configuration and replaces only the endpoint. It
+checks the complete stored configuration and generation after saving. A stale
+request is rejected. Repeating the current endpoint at its current generation
+uses no flash write or reboot. A changed or ambiguously written configuration
+fences the old network session. A successful change reboots after the reply
+drains. After an ambiguous result, inspect over a fresh USB session. For network
+diagnosis, see the [operator guide](README.md#move-an-enrolled-receiver-to-another-manager).
+
 The CLI opts in with `-target esp32 -usb-v3 -port PORT inspect`. Without
 `-usb-v3`, existing v2 behavior remains unchanged. Install compatible firmware
 before opting in; never use a mutation to discover protocol support. Read polls

@@ -21,13 +21,22 @@ int ep_config_load(const ep_flash *flash, uint8_t config[PAGE], uint64_t *genera
     }
     return *generation ? 1 : (blank ? 0 : 2);
 }
+static bool valid_manager_change(const uint8_t *p) {
+    size_t n = (size_t)p[20] * 256 + p[21];
+    return p[4] == 3 && ep_be64(p + 8) && !ep_filled(p + 24, 16, 0) &&
+        ep_manager_change_endpoint(p + 72, n) && ep_filled(p + 6, 2, 0) &&
+        ep_filled(p + 16, 4, 0) && ep_filled(p + 22, 2, 0) && ep_filled(p + 40, 32, 0) &&
+        ep_filled(p + 72 + n, 255 - n, 0) && ep_filled(p + 327, 159, 0);
+}
 bool ep_provision_valid(const uint8_t p[PAGE]) {
-    if (memcmp(p, "EPCQ", 4) || (p[4] != 2 && p[4] != 3) || p[5] < 1 || p[5] > 5 ||
+    if (memcmp(p, "EPCQ", 4) || (p[4] != 2 && p[4] != 3) || p[5] < 1 || p[5] > EP_INSPECT_MANAGER ||
         ep_be32(p + 508) != ep_crc32(p, 508)) return false;
     // v3 correlation occupies only reserved wire bytes, never stored EPC2 data.
     if (p[4] == 3) {
         if (ep_filled(p + 486, 16, 0) || !ep_filled(p + 502, 6, 0)) return false;
     } else if (!ep_filled(p + 486, 22, 0)) return false;
+    if (p[5] == EP_SET_MANAGER) return valid_manager_change(p);
+    if (p[5] == EP_INSPECT_MANAGER && p[4] != 3) return false;
     if (p[5] != 2 && p[5] != 3) return ep_filled(p + 6, 480, 0);
     if (!ep_config_valid(p)) return false;
     size_t lengths[] = {(size_t)p[20] * 256 + p[21], p[17], p[18], p[19]};
@@ -72,16 +81,40 @@ int ep_provision_readonly(const ep_flash *flash, const uint8_t request[PAGE], ui
     public_reply(reply, request, state == 3 ? CODE_STORAGE : 5, state, config, generation);
     return 0;
 }
+bool ep_provision_may_change(const uint8_t request[PAGE], const uint8_t reply[PAGE]) {
+    if (request[5] != EP_SET_MANAGER) return request[5] >= 2 && request[5] <= 4;
+    return reply[12] == CODE_STORAGE || (reply[12] == 0 && ep_be64(reply + 16) != ep_be64(request + 8));
+}
+static int change_manager(const ep_flash *flash, const uint8_t *request, uint8_t *candidate,
+                          int state, uint64_t *generation) {
+    if (state != 1 || *generation != ep_be64(request + 8) || memcmp(candidate + 24, request + 24, 16))
+        return CODE_INVALID_STATE;
+    if (!memcmp(candidate + 72, "tls://", 6) && memcmp(request + 72, "tls://", 6)) return CODE_INVALID_STATE;
+    size_t size = (size_t)request[20] * 256 + request[21];
+    if (!memcmp(candidate + 20, request + 20, 2) && !memcmp(candidate + 72, request + 72, size)) return 0;
+    memcpy(candidate + 20, request + 20, 2);
+    memcpy(candidate + 72, request + 72, 255);
+    int code = save(flash, candidate, *generation);
+    if (!code) (*generation)++;
+    return code;
+}
 int ep_provision(const ep_flash *flash, const uint8_t request[PAGE], uint8_t reply[PAGE]) {
     if (!ep_provision_valid(request)) return -1;
     uint8_t config[PAGE]; uint64_t generation;
     int state = ep_config_load(flash, config, &generation);
     uint64_t expected_generation = generation + 1;
+    const uint8_t *expected = request;
     int code = state == 3 ? CODE_STORAGE : 0;
     if (request[5] == 2 || request[5] == 3) {
         bool allowed = request[5] == 2 ? state == 0 || state == 2 :
             state == 1 && memcmp(config + 24, request + 24, 16) == 0;
         if (!code) code = allowed ? save(flash, request, generation) : CODE_INVALID_STATE;
+    } else if (request[5] == EP_SET_MANAGER && !code) {
+        // Scratch until public_reply clears the entire buffer. No secret goes on the wire.
+        memcpy(reply, config, PAGE);
+        expected = reply;
+        expected_generation = generation;
+        code = change_manager(flash, request, reply, state, &expected_generation);
     } else if (request[5] == 4) {
         if (code || !flash->erase || flash->erase(flash->context, 0, 2 * SECTOR)) code = CODE_STORAGE;
     }
@@ -90,9 +123,21 @@ int ep_provision(const ep_flash *flash, const uint8_t request[PAGE], uint8_t rep
     // An acknowledged flash call is not proof of the authoritative state.
     // Match provision.Service.Report: verify the operation's postcondition.
     if (!code && request[5] == 4 && state != 0) code = CODE_STORAGE;
-    if (!code && (request[5] == 2 || request[5] == 3) &&
+    if (!code && (request[5] == 2 || request[5] == 3 || request[5] == EP_SET_MANAGER) &&
         (state != 1 || generation != expected_generation ||
-         memcmp(config + 16, request + 16, 470))) code = CODE_STORAGE;
+         memcmp(config + 16, expected + 16, 470))) code = CODE_STORAGE;
     public_reply(reply, request, (uint8_t)code, state, config, generation);
     return 0;
+}
+
+bool ep_config_save_wifi(const ep_flash *flash, const uint8_t candidate[PAGE], uint64_t generation) {
+    uint8_t current[PAGE]; uint64_t stored;
+    if (!ep_config_valid(candidate) || ep_config_load(flash,current,&stored) != 1 || stored != generation)
+        return false;
+    // Only the Wi-Fi fields can cross the phone provisioning boundary.
+    if (current[16] != candidate[16] || memcmp(current+19,candidate+19,308) ||
+        memcmp(current+422,candidate+422,64)) return false;
+    if (!memcmp(current+17,candidate+17,2) && !memcmp(current+327,candidate+327,95)) return true;
+    return !save(flash,candidate,stored) && ep_config_load(flash,current,&stored) == 1 &&
+        stored == generation + 1 && !memcmp(current+16,candidate+16,470);
 }

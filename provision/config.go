@@ -50,6 +50,9 @@ func (c Config) ValidateFor(codec Codec) error {
 
 func (codec Codec) validManager(value string) bool {
 	// Native ESP32 IPv6 is deferred; apply the same policy to public metadata.
+	if codec.esp32 && strings.HasPrefix(value, "tls://") {
+		return ValidESP32Endpoint(value)
+	}
 	return validManager(value) && (!codec.esp32 || !strings.Contains(value, "["))
 }
 

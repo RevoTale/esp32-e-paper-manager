@@ -95,9 +95,37 @@ func testProvisioningRoundTrip(t *testing.T, correlated bool) {
 			if r.State != provision.StateBlank {
 				t.Fatal(r.State)
 			}
-		} else if r.Auth != provision.AuthWPA2PSK || r.DeviceID != config.DeviceID {
+			continue
+		}
+		if r.Auth != provision.AuthWPA2PSK || r.DeviceID != config.DeviceID {
 			t.Fatal("metadata mismatch")
+		}
+		if operation == provision.OperationProvision {
+			testManagerChange(t, client, r, correlated)
 		}
 	}
 	peer.finish()
+}
+
+func testManagerChange(t *testing.T, client *provisionclient.Client, before provision.Response, correlated bool) {
+	t.Helper()
+	if !correlated {
+		if _, err := client.SetManager("tcp://screen.home.arpa:9757"); err == nil {
+			t.Fatal("legacy client accepted set-manager")
+		}
+		return
+	}
+	for i, endpoint := range []string{"tcp://screen.home.arpa:9757", "tcp://192.0.2.3:9757"} {
+		want := before
+		want.Manager, want.Generation, want.Operation = endpoint, before.Generation+uint64(i+1), provision.OperationSetManager
+		after, err := client.SetManager(endpoint)
+		if err != nil || after != want {
+			t.Fatal(after, err)
+		}
+		want.Operation = provision.OperationInspectManager
+		again, err := client.SetManager(endpoint)
+		if err != nil || again != want {
+			t.Fatal(again, err)
+		}
+	}
 }

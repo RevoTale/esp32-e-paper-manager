@@ -1,5 +1,5 @@
 FROM --platform=$BUILDPLATFORM ghcr.io/tinygo-org/tinygo:0.42.0 AS build
-ENV GOTOOLCHAIN=go1.26.8
+ENV GOTOOLCHAIN=go1.26.11
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download

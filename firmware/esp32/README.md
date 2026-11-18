@@ -161,6 +161,37 @@ the agreed host tool/permission; this document does not install host Python.
 
 ## Direct host USB and provisioning
 
+### Move an enrolled receiver to another manager
+
+Use firmware and the host tool built with `set-manager` support. The v0.2.0
+release predates this operation. The manager can continue to run v0.2.0.
+With ESP32 on
+USB, set the server's IPv4 address or a DNS name that resolves to it on the
+device's Wi-Fi. A bare name or IPv4 uses TCP port 9757. For a custom port,
+pass the full address, such as `tcp://paper.home.arpa:19757`.
+
+```sh
+./build/epaperprovision-darwin-arm64 -target esp32 -port /dev/cu.YOUR_ESP32 set-manager paper.home.arpa
+```
+
+The tool inspects the board first. If the endpoint already matches, it prints
+`changed=false` and finishes. For a change, the receiver stores the endpoint,
+verifies the journal, replies and restarts. The new manager uses the existing
+USB enrollment file. Keep the Wi-Fi password and device key where they are.
+With a stable DNS A record, a later server IP change needs only a DNS update
+when the same port and enrollment are used.
+
+An error during preflight means no change command was sent. If confirmation of
+the change is lost, reopen USB and run `inspect` to read the stored address.
+If that address is correct but Wi-Fi stays disconnected, close the USB tool and
+restart the idle board once. A USB failure after the flash write can leave the
+old network session fenced until reboot. Do not repeat the write to reconnect.
+An acknowledged change confirms storage. Verify Wi-Fi delivery separately by
+checking the submitted revision in [screen status](../../docs/screen-api.md),
+then check the panel. See the [wire contract](USB-CORRELATION.md).
+
+### Flash and first-time provisioning
+
 The optional external Go flasher v0.8.1 is not built or installed by this
 repository. If already available, the source-verified command below is run from
 the repository root **only after confirming the current port and authorization

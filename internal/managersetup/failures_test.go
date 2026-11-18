@@ -13,6 +13,7 @@ import (
 func fixture(t *testing.T) Config {
 	t.Helper()
 	parent := t.TempDir()
+	mustChmod(t, parent, 0o700)
 	c := Config{Enrollment: filepath.Join(parent, "source.json"), Directory: filepath.Join(parent, "credentials"), UID: -1, GID: -1}
 	if err := hostprovision.SaveEnrollment(c.Enrollment, hostprovision.Enrollment{
 		DeviceID: [16]byte{1}, DeviceKey: [32]byte{2}, Timezone: "Europe/Kyiv",
