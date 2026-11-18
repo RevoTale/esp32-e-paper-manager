@@ -34,8 +34,8 @@ steps:
     settings:
       dockerfile: .woodpecker/quality.generated.Dockerfile
       build_args:
-        - QUALITY_PREVIOUS_SHA=${CI_COMMIT_SHA}^
-        - RELEASE_COMMIT=${CI_COMMIT_SHA}
+        QUALITY_PREVIOUS_SHA: ${CI_COMMIT_SHA}^
+        RELEASE_COMMIT: ${CI_COMMIT_SHA}
       title: ESP32 e-Paper Manager
       description: Verified ESP32 firmware update bundle
       authors: RevoTale
@@ -68,7 +68,7 @@ steps:
       provenance: true
       sbom: true
       build_args:
-        - VCS_REF=${CI_COMMIT_SHA}
+        VCS_REF: ${CI_COMMIT_SHA}
       tags:
         - ${CI_COMMIT_TAG}
         - sha-${CI_COMMIT_SHA}
